@@ -1,0 +1,34 @@
+[package]
+name = "reed-solomon-erasure"
+version = "2.0.0"
+authors = ["Darren Ldl <darrenldldev@gmail.com>"]
+build   = "build.rs"
+exclude = [
+    "Backblaze_JavaReedSolomon/*",
+    "KlausPost_reedsolomon/*",
+]
+
+description = "Rust implementation of Reed-Solomon erasure coding"
+
+documentation = "https://docs.rs/reed-solomon-erasure"
+homepage      = "https://github.com/darrenldl/reed-solomon-erasure"
+repository    = "https://github.com/darrenldl/reed-solomon-erasure"
+
+readme = "README.md"
+
+keywords   = ["reed-solomon", "erasure"]
+
+categories = ["encoding"]
+
+license = "MIT"
+
+[badges]
+travis-ci = { repository = "darrenldl/reed-solomon-erasure" }
+codecov   = { repository = "darrenldl/reed-solomon-erasure" }
+coveralls = { repository = "darrenldl/reed-solomon-erasure" }
+
+[dependencies]
+rand  = "0.4"
+rayon = "0.9"
+threadpool = "1.0"
+num_cpus = "1.0"

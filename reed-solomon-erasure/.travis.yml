@@ -1,0 +1,51 @@
+language: rust
+rust:
+  - stable
+  - beta
+  - nightly
+
+branches:
+  except:
+    - test
+    - test2
+    - rewrite-using-klauspost-go
+
+matrix:
+  allow_features:
+    - rust: nightly
+
+script:
+  - cargo build --verbose --all
+  - cargo test  --verbose --all
+
+env:
+  global:
+  - RUSTFLAGS="-C link-dead-code"
+
+addons:
+  apt:
+    packages:
+      - libcurl4-openssl-dev
+      - libelf-dev
+      - libdw-dev
+      - cmake
+      - gcc
+      - binutils-dev
+      - libiberty-dev
+
+after_success: |
+  wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
+  tar xzf master.tar.gz &&
+  cd kcov-master &&
+  mkdir build &&
+  cd build &&
+  cmake .. &&
+  make &&
+  make install DESTDIR=../../kcov-build &&
+  cd ../.. &&
+  rm -rf kcov-master &&
+  for file in target/debug/reed_solomon_erasure-*[^\.d]; do mkdir -p "target/cov/$(basename $file)"; ./kcov-build/usr/local/bin/kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/$(basename $file)" "$file"; done &&
+  bash <(curl -s https://codecov.io/bash) &&
+  echo "Uploaded code coverage to Codecov" &&
+  for file in target/debug/reed_solomon_erasure-*[^\.d]; do mkdir -p "target/cov/$(basename $file)"; ./kcov-build/usr/local/bin/kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/$(basename $file)" "$file"; done &&
+  echo "Uploaded code coverage to Coveralls"
