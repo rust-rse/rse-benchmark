@@ -1,0 +1,9 @@
+[package]
+name = "rs-bench"
+version = "0.1.0"
+authors = ["Darren Ldl <darrenldldev@gmail.com>"]
+
+[dependencies]
+reed-solomon-erasure = { path = "reed-solomon-erasure" }
+rand = "0.4"
+time = "0.1"
