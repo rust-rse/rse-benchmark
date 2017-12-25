@@ -45,13 +45,13 @@ fn benchmark_encode(iterations    : usize,
     let end   = time::precise_time_ns();
     let time_taken = (end - start) as f64 / 1_000_000_000.0;
     let byte_count = (iterations * per_shard * data_shards) as f64;
-    println!("verify :\n    shards : {} / {}\n    shard length : {}\n    bytes per encode : {}\n    time taken : {}\n    byte_count : {}\n    MB/s : {}",
-             data_shards, parity_shards,
-             per_shard,
-             pparam.bytes_per_encode,
-             time_taken,
-             byte_count,
-             byte_count / 1_000_000.0 / time_taken);
+    println!("encode :");
+    println!("    shards           : {} / {}", data_shards, parity_shards);
+    println!("    shard length     : {}", per_shard);
+    println!("    bytes per encode : {}", pparam.bytes_per_encode);
+    println!("    time taken       : {}", time_taken);
+    println!("    byte count       : {}", byte_count);
+    println!("    MB/s             : {}", byte_count / 1_000_000.0 / time_taken);
 }
 
 fn benchmark_verify(iterations    : usize,
@@ -71,14 +71,14 @@ fn benchmark_verify(iterations    : usize,
     }
     let end   = time::precise_time_ns();
     let time_taken = (end - start) as f64 / 1_000_000_000.0;
-    let byte_count = (iterations * per_shard * data_shards) as f64;
-    println!("verify :\n    shards : {} / {}\n    shard length : {}\n    bytes per encode : {}\n    time taken : {}\n    byte_count : {}\n    MB/s : {}",
-             data_shards, parity_shards,
-             per_shard,
-             pparam.bytes_per_encode,
-             time_taken,
-             byte_count,
-             byte_count / 1_000_000.0 / time_taken);
+    let byte_count = (iterations * per_shard * (data_shards + parity_shards)) as f64;
+    println!("verify :");
+    println!("    shards           : {} / {}", data_shards, parity_shards);
+    println!("    shard length     : {}", per_shard);
+    println!("    bytes per encode : {}", pparam.bytes_per_encode);
+    println!("    time taken       : {}", time_taken);
+    println!("    byte count       : {}", byte_count);
+    println!("    MB/s             : {}", byte_count / 1_000_000.0 / time_taken);
 }
 
 fn benchmark_reconstruct(iterations    : usize,
@@ -96,18 +96,19 @@ fn benchmark_reconstruct(iterations    : usize,
 
     let start = time::precise_time_ns();
     for _ in 0..iterations {
+        shards[0] = None;
         r.reconstruct_shards(&mut shards).unwrap();
     }
     let end   = time::precise_time_ns();
     let time_taken = (end - start) as f64 / 1_000_000_000.0;
-    let byte_count = (iterations * per_shard * data_shards) as f64;
-    println!("reconstruct :\n    shards : {} / {}\n    shard length : {}\n    bytes per encode : {}\n    time taken : {}\n    byte_count : {}\n    MB/s : {}",
-             data_shards, parity_shards,
-             per_shard,
-             pparam.bytes_per_encode,
-             time_taken,
-             byte_count,
-             byte_count / 1_000_000.0 / time_taken);
+    let byte_count = (iterations * per_shard * 1) as f64;
+    println!("reconstruct :");
+    println!("    shards           : {} / {}", data_shards, parity_shards);
+    println!("    shard length     : {}", per_shard);
+    println!("    bytes per encode : {}", pparam.bytes_per_encode);
+    println!("    time taken       : {}", time_taken);
+    println!("    byte count       : {}", byte_count);
+    println!("    MB/s             : {}", byte_count / 1_000_000.0 / time_taken);
 }
 
 fn main() {
