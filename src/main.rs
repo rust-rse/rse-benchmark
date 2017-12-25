@@ -33,13 +33,37 @@ fn benchmark_encode(iterations    : usize,
                     parity_shards : usize,
                     per_shard     : usize,
                     pparam        : ParallelParam) {
-    //let mut shards = make_random_shards!(per_shard, data_shards + parity_shards);
-    let mut shards = make_blank_shards(per_shard, data_shards + parity_shards);
+    let mut shards = make_random_shards!(per_shard, data_shards + parity_shards);
+    //let mut shards = make_blank_shards(per_shard, data_shards + parity_shards);
     let r = ReedSolomon::with_pparam(data_shards, parity_shards, pparam);
 
     let start = time::precise_time_ns();
     for _ in 0..iterations {
         r.encode_shards(&mut shards).unwrap();
+        //assert!(r.verify_shards(&shards).unwrap());
+    }
+    let end   = time::precise_time_ns();
+    let time_taken = (end - start) as f64 / 1_000_000_000.0;
+    let byte_count = (iterations * per_shard * data_shards) as f64;
+    println!("time taken : {}", time_taken);
+    println!("byte count : {}", byte_count);
+    println!("MB/s : {}", byte_count / 1_000_000.0 / time_taken);
+}
+
+fn benchmark_verify(iterations    : usize,
+                    data_shards   : usize,
+                    parity_shards : usize,
+                    per_shard     : usize,
+                    pparam        : ParallelParam) {
+    let mut shards = make_random_shards!(per_shard, data_shards + parity_shards);
+    //let mut shards = make_blank_shards(per_shard, data_shards + parity_shards);
+    let r = ReedSolomon::with_pparam(data_shards, parity_shards, pparam);
+
+    r.encode_shards(&mut shards).unwrap();
+
+    let start = time::precise_time_ns();
+    for _ in 0..iterations {
+        r.verify_shards(&shards).unwrap();
     }
     let end   = time::precise_time_ns();
     let time_taken = (end - start) as f64 / 1_000_000_000.0;
@@ -69,5 +93,8 @@ fn main() {
     benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(65536, 10));
     benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(10485760, 10));
     println!("=====");
-    benchmark_encode(500, 100, 20, 496, ParallelParam::new(200,  10));
+    /*benchmark_encode(500, 10, 1, 496, ParallelParam::new(500,  10));
+    benchmark_encode(500, 3, 2, 496, ParallelParam::new(500,  10));
+    benchmark_encode(500, 10, 3, 496, ParallelParam::new(500,  10));
+    println!("=====");*/
 }
