@@ -54,6 +54,43 @@ fn benchmark_encode(iterations    : usize,
     println!("    MB/s             : {}", byte_count / 1_000_000.0 / time_taken);
 }
 
+fn benchmark_encode_inplace(iterations    : usize,
+                            //data_shards   : usize,
+                            //parity_shards : usize,
+                            //per_shard     : usize,
+                            pparam        : ParallelParam) {
+    const DATA_SHARDS   : usize = 5;
+    const PARITY_SHARDS : usize = 2;
+    const PER_SHARD     : usize = 1_000_000;
+    //let mut shards = make_random_shards!(per_shard, data_shards + parity_shards);
+    //let mut shards = make_blank_shards(per_shard, data_shards + parity_shards);
+    let mut slices : [[u8; PER_SHARD]; DATA_SHARDS + PARITY_SHARDS] =
+        [[0; PER_SHARD]; DATA_SHARDS + PARITY_SHARDS];
+    let r = ReedSolomon::with_pparam(DATA_SHARDS, PARITY_SHARDS, pparam);
+
+    let mut slices_ref : Vec<&mut [u8]> =
+        Vec::with_capacity(DATA_SHARDS + PARITY_SHARDS);
+    for slice in slices.iter_mut() {
+        slices_ref.push(slice);
+    }
+
+    let start = time::precise_time_ns();
+    for _ in 0..iterations {
+        r.encode(&mut slices_ref).unwrap();
+        //assert!(r.verify_shards(&shards).unwrap());
+    }
+    let end   = time::precise_time_ns();
+    let time_taken = (end - start) as f64 / 1_000_000_000.0;
+    let byte_count = (iterations * PER_SHARD * DATA_SHARDS) as f64;
+    println!("encode inplace :");
+    println!("    shards           : {} / {}", DATA_SHARDS, PARITY_SHARDS);
+    println!("    shard length     : {}", PER_SHARD);
+    println!("    bytes per encode : {}", pparam.bytes_per_encode);
+    println!("    time taken       : {}", time_taken);
+    println!("    byte count       : {}", byte_count);
+    println!("    MB/s             : {}", byte_count / 1_000_000.0 / time_taken);
+}
+
 fn benchmark_verify(iterations    : usize,
                     data_shards   : usize,
                     parity_shards : usize,
@@ -120,6 +157,15 @@ fn main() {
     benchmark_encode(500, 5, 2, 1_000_000, ParallelParam::new(32768, 10));
     benchmark_encode(500, 5, 2, 1_000_000, ParallelParam::new(65536, 10));
     benchmark_encode(500, 5, 2, 1_000_000, ParallelParam::new(10485760, 10));
+    println!("=====");
+    benchmark_encode_inplace(500, ParallelParam::new(1024,  10));
+    benchmark_encode_inplace(500, ParallelParam::new(2048,  10));
+    benchmark_encode_inplace(500, ParallelParam::new(4096,  10));
+    benchmark_encode_inplace(500, ParallelParam::new(8192,  10));
+    benchmark_encode_inplace(500, ParallelParam::new(16384, 10));
+    benchmark_encode_inplace(500, ParallelParam::new(32768, 10));
+    benchmark_encode_inplace(500, ParallelParam::new(65536, 10));
+    benchmark_encode_inplace(500, ParallelParam::new(10485760, 10));
     println!("=====");
 
     benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(1024,  10));
