@@ -265,33 +265,39 @@ impl ReedSolomon {
                 .into_par_iter()
                 .for_each(|(i_row, output)| {
                     if c == 0 {
-                        misc_utils::split_slice_mut_with_index(
-                            output, self.pparam.bytes_per_encode)
-                            .into_par_iter()
-                            .for_each(|(i, output)| {
-                                let start =
-                                    i * self.pparam.bytes_per_encode;
-                                galois::mul_slice(matrix_rows[i_row][c],
-                                                  &input[start..start + output.len()],
-                                                  output);
-                            })
-                        /*galois::mul_slice(matrix_rows[i_row][c],
-                                          input,
-                                          output);*/
-                    } else {
-                        misc_utils::split_slice_mut_with_index(
-                            output, self.pparam.bytes_per_encode)
-                            .into_par_iter()
-                            .for_each(|(i, output)| {
-                                let start =
-                                    i * self.pparam.bytes_per_encode;
-                                galois::mul_slice_xor(matrix_rows[i_row][c],
+                        if output.len() <= self.pparam.bytes_per_encode {
+                            galois::mul_slice(matrix_rows[i_row][c],
+                                              input,
+                                              output);
+                        } else {
+                            misc_utils::split_slice_mut_with_index(
+                                output, self.pparam.bytes_per_encode)
+                                .into_par_iter()
+                                .for_each(|(i, output)| {
+                                    let start =
+                                        i * self.pparam.bytes_per_encode;
+                                    galois::mul_slice(matrix_rows[i_row][c],
                                                       &input[start..start + output.len()],
                                                       output);
-                            })
-                        /*galois::mul_slice_xor(matrix_rows[i_row][c],
-                                              input,
-                                              output);*/
+                                })
+                        }
+                    } else {
+                        if output.len() <= self.pparam.bytes_per_encode {
+                            galois::mul_slice_xor(matrix_rows[i_row][c],
+                                                  input,
+                                                  output);
+                        } else {
+                            misc_utils::split_slice_mut_with_index(
+                                output, self.pparam.bytes_per_encode)
+                                .into_par_iter()
+                                .for_each(|(i, output)| {
+                                    let start =
+                                        i * self.pparam.bytes_per_encode;
+                                    galois::mul_slice_xor(matrix_rows[i_row][c],
+                                                          &input[start..start + output.len()],
+                                                          output);
+                                })
+                        }
                     }
                 })
         }
@@ -310,17 +316,42 @@ impl ReedSolomon {
                 (&mut outputs)
                 .into_par_iter()
                 .for_each(|(i_row, output)| {
-                    galois::mul_slice_xor(matrix_rows[i_row][c],
-                                          input,
-                                          output);
+                    misc_utils::split_slice_mut_with_index
+                        (output, self.pparam.bytes_per_encode)
+                        .into_par_iter()
+                        .for_each(|(i, output)| {
+                            let start =
+                                i * self.pparam.bytes_per_encode;
+                            galois::mul_slice_xor(matrix_rows[i_row][c],
+                                                  &input[start..start + output.len()],
+                                                  output);
+                        })
                 })
         }
-        for i in 0..outputs.len() {
+        let any_shard_mismatch = misc_utils::breakdown_slice_with_index
+            (&outputs)
+            .into_par_iter()
+            .map(|(i, output)| {
+                let to_check = to_check[i];
+                misc_utils::split_slice_with_index
+                    (output, self.pparam.bytes_per_encode)
+                    .into_par_iter()
+                    .map(|(i, output)| {
+                        let start =
+                            i * self.pparam.bytes_per_encode;
+                        // the following returns true if the chunks match
+                        misc_utils::slices_are_equal(output, &to_check[start..start + output.len()])
+                    })
+                    .any(|x| !x)  // find the first false(some chunks are inequal), which will cause this to return true
+            })
+            .any(|x| x);  // find the first true(some chunks are inequal)
+        /*for i in 0..outputs.len() {
             if !misc_utils::slices_are_equal(&outputs[i], to_check[i]) {
                 return false;
             }
-        }
-        true
+        }*/
+        //true
+        !any_shard_mismatch  // if it is not that case that any of the shard has a mismatch
     }
 
     fn check_slices(slices : &[&[u8]]) -> Result<(), Error> {
