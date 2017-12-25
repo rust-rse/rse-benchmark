@@ -151,7 +151,7 @@ pub struct ReedSolomon {
 }
 
 /// Parameters for parallelism
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub struct ParallelParam {
     pub bytes_per_encode  : usize,
     pub shards_per_encode : usize,
@@ -345,12 +345,6 @@ impl ReedSolomon {
                     .any(|x| !x)  // find the first false(some chunks are inequal), which will cause this to return true
             })
             .any(|x| x);  // find the first true(some chunks are inequal)
-        /*for i in 0..outputs.len() {
-            if !misc_utils::slices_are_equal(&outputs[i], to_check[i]) {
-                return false;
-            }
-        }*/
-        //true
         !any_shard_mismatch  // if it is not that case that any of the shard has a mismatch
     }
 
