@@ -45,9 +45,12 @@ fn benchmark_encode(iterations    : usize,
     let end   = time::precise_time_ns();
     let time_taken = (end - start) as f64 / 1_000_000_000.0;
     let byte_count = (iterations * per_shard * data_shards) as f64;
-    println!("time taken : {}", time_taken);
-    println!("byte count : {}", byte_count);
-    println!("MB/s : {}", byte_count / 1_000_000.0 / time_taken);
+    println!("encode : shards : {} / {}, bytes per encode : {}\ntime taken : {}, byte_count : {}, MB/s : {}",
+             data_shards, parity_shards,
+             pparam.bytes_per_encode,
+             time_taken,
+             byte_count,
+             byte_count / 1_000_000.0 / time_taken);
 }
 
 fn benchmark_verify(iterations    : usize,
@@ -68,9 +71,40 @@ fn benchmark_verify(iterations    : usize,
     let end   = time::precise_time_ns();
     let time_taken = (end - start) as f64 / 1_000_000_000.0;
     let byte_count = (iterations * per_shard * data_shards) as f64;
-    println!("time taken : {}", time_taken);
-    println!("byte count : {}", byte_count);
-    println!("MB/s : {}", byte_count / 1_000_000.0 / time_taken);
+    println!("verify : shards : {} / {}, bytes per encode : {}\ntime taken : {}, byte_count : {}, MB/s : {}",
+             data_shards, parity_shards,
+             pparam.bytes_per_encode,
+             time_taken,
+             byte_count,
+             byte_count / 1_000_000.0 / time_taken);
+}
+
+fn benchmark_reconstruct(iterations    : usize,
+                         data_shards   : usize,
+                         parity_shards : usize,
+                         per_shard     : usize,
+                         pparam        : ParallelParam) {
+    let mut shards = make_random_shards!(per_shard, data_shards + parity_shards);
+    //let mut shards = make_blank_shards(per_shard, data_shards + parity_shards);
+    let r = ReedSolomon::with_pparam(data_shards, parity_shards, pparam);
+
+    r.encode_shards(&mut shards).unwrap();
+
+    let mut shards = shards_into_option_shards(shards);
+
+    let start = time::precise_time_ns();
+    for _ in 0..iterations {
+        r.reconstruct_shards(&mut shards).unwrap();
+    }
+    let end   = time::precise_time_ns();
+    let time_taken = (end - start) as f64 / 1_000_000_000.0;
+    let byte_count = (iterations * per_shard * data_shards) as f64;
+    println!("reconstruct : shards : {} / {}, bytes per encode : {}\ntime taken : {}, byte_count : {}, MB/s : {}",
+             data_shards, parity_shards,
+             pparam.bytes_per_encode,
+             time_taken,
+             byte_count,
+             byte_count / 1_000_000.0 / time_taken);
 }
 
 fn main() {
