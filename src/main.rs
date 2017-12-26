@@ -149,7 +149,6 @@ fn benchmark_reconstruct(iterations    : usize,
 }
 
 fn main() {
-    /*
     benchmark_encode(500, 5, 2, 1_000_000, ParallelParam::new(1024,  10));
     benchmark_encode(500, 5, 2, 1_000_000, ParallelParam::new(2048,  10));
     benchmark_encode(500, 5, 2, 1_000_000, ParallelParam::new(4096,  10));
@@ -186,12 +185,12 @@ fn main() {
     benchmark_encode(500, 5, 2, 496 * 5, ParallelParam::new(8192,  10));
     benchmark_encode(500, 5, 2, 496 * 7, ParallelParam::new(8192,  10));
     benchmark_encode(500, 5, 2, 496 * 9, ParallelParam::new(8192,  10));
-    println!("=====");*/
+    println!("=====");
     /*benchmark_encode(500, 10, 1, 496, ParallelParam::new(500,  10));
     benchmark_encode(500, 3, 2, 496, ParallelParam::new(500,  10));
     benchmark_encode(500, 10, 3, 496, ParallelParam::new(500,  10));
     println!("=====");*/
-    benchmark_encode(500, 10, 2, 10_000, ParallelParam::new(8192,  10));
+    /*benchmark_encode(500, 10, 2, 10_000, ParallelParam::new(8192,  10));
     benchmark_encode(500, 100, 20, 10_000, ParallelParam::new(8192,  10));
     benchmark_encode(500, 17, 3, 1_000_000, ParallelParam::new(8192,  10));
     benchmark_encode(500, 10, 4, 16_000_000, ParallelParam::new(8192,  10));
@@ -199,5 +198,7 @@ fn main() {
     benchmark_encode(500, 10, 2, 1_000_000, ParallelParam::new(8192,  10));
     benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(8192,  10));
     benchmark_encode(500, 50, 20, 1_000_000, ParallelParam::new(8192,  10));
-    benchmark_encode(500, 17, 3, 16_000_000, ParallelParam::new(8192,  10));
+    benchmark_encode(500, 17, 3, 16_000_000, ParallelParam::new(8192,  10));*/
+    /*benchmark_verify(500, 10, 2, 10_000, ParallelParam::new(65536,  10));
+    benchmark_verify(10, 10, 4, 16_000_000, ParallelParam::new(8192,  10));*/
 }
