@@ -1,0 +1,229 @@
+encode :
+    shards           : 5 / 2
+    shard length     : 1000000
+    bytes per encode : 1024
+    time taken       : 2.159341521
+    byte count       : 2500000000
+    MB/s             : 1157.760352258794
+encode :
+    shards           : 5 / 2
+    shard length     : 1000000
+    bytes per encode : 2048
+    time taken       : 2.152712342
+    byte count       : 2500000000
+    MB/s             : 1161.325622204288
+encode :
+    shards           : 5 / 2
+    shard length     : 1000000
+    bytes per encode : 4096
+    time taken       : 2.142596556
+    byte count       : 2500000000
+    MB/s             : 1166.8085589884613
+encode :
+    shards           : 5 / 2
+    shard length     : 1000000
+    bytes per encode : 8192
+    time taken       : 2.133902063
+    byte count       : 2500000000
+    MB/s             : 1171.562670727874
+encode :
+    shards           : 5 / 2
+    shard length     : 1000000
+    bytes per encode : 16384
+    time taken       : 2.143958242
+    byte count       : 2500000000
+    MB/s             : 1166.0674872416662
+encode :
+    shards           : 5 / 2
+    shard length     : 1000000
+    bytes per encode : 32768
+    time taken       : 2.152165835
+    byte count       : 2500000000
+    MB/s             : 1161.6205216825217
+encode :
+    shards           : 5 / 2
+    shard length     : 1000000
+    bytes per encode : 65536
+    time taken       : 2.189072745
+    byte count       : 2500000000
+    MB/s             : 1142.0360541741613
+encode :
+    shards           : 5 / 2
+    shard length     : 1000000
+    bytes per encode : 10485760
+    time taken       : 2.70733335
+    byte count       : 2500000000
+    MB/s             : 923.4178716854354
+=====
+encode inplace :
+    shards           : 5 / 2
+    shard length     : 1000000
+    bytes per encode : 1024
+    time taken       : 2.165471561
+    byte count       : 2500000000
+    MB/s             : 1154.482951900563
+encode inplace :
+    shards           : 5 / 2
+    shard length     : 1000000
+    bytes per encode : 2048
+    time taken       : 2.143951528
+    byte count       : 2500000000
+    MB/s             : 1166.0711388993677
+encode inplace :
+    shards           : 5 / 2
+    shard length     : 1000000
+    bytes per encode : 4096
+    time taken       : 2.134030922
+    byte count       : 2500000000
+    MB/s             : 1171.491928362976
+encode inplace :
+    shards           : 5 / 2
+    shard length     : 1000000
+    bytes per encode : 8192
+    time taken       : 2.130187463
+    byte count       : 2500000000
+    MB/s             : 1173.6056302195973
+encode inplace :
+    shards           : 5 / 2
+    shard length     : 1000000
+    bytes per encode : 16384
+    time taken       : 2.141739878
+    byte count       : 2500000000
+    MB/s             : 1167.2752726323379
+encode inplace :
+    shards           : 5 / 2
+    shard length     : 1000000
+    bytes per encode : 32768
+    time taken       : 2.144496941
+    byte count       : 2500000000
+    MB/s             : 1165.774570344794
+encode inplace :
+    shards           : 5 / 2
+    shard length     : 1000000
+    bytes per encode : 65536
+    time taken       : 2.163924202
+    byte count       : 2500000000
+    MB/s             : 1155.308488943089
+encode inplace :
+    shards           : 5 / 2
+    shard length     : 1000000
+    bytes per encode : 10485760
+    time taken       : 2.70645576
+    byte count       : 2500000000
+    MB/s             : 923.7172973409328
+=====
+encode :
+    shards           : 10 / 4
+    shard length     : 1000000
+    bytes per encode : 1024
+    time taken       : 8.761767755
+    byte count       : 5000000000
+    MB/s             : 570.6610971452302
+encode :
+    shards           : 10 / 4
+    shard length     : 1000000
+    bytes per encode : 2048
+    time taken       : 8.750485281
+    byte count       : 5000000000
+    MB/s             : 571.3968813657159
+encode :
+    shards           : 10 / 4
+    shard length     : 1000000
+    bytes per encode : 4096
+    time taken       : 8.816611156
+    byte count       : 5000000000
+    MB/s             : 567.1113210655017
+encode :
+    shards           : 10 / 4
+    shard length     : 1000000
+    bytes per encode : 8192
+    time taken       : 8.73696857
+    byte count       : 5000000000
+    MB/s             : 572.2808729298199
+encode :
+    shards           : 10 / 4
+    shard length     : 1000000
+    bytes per encode : 16384
+    time taken       : 8.739523596
+    byte count       : 5000000000
+    MB/s             : 572.1135648959693
+encode :
+    shards           : 10 / 4
+    shard length     : 1000000
+    bytes per encode : 32768
+    time taken       : 8.856248968
+    byte count       : 5000000000
+    MB/s             : 564.5731074257668
+encode :
+    shards           : 10 / 4
+    shard length     : 1000000
+    bytes per encode : 65536
+    time taken       : 8.721071067
+    byte count       : 5000000000
+    MB/s             : 573.3240747136775
+encode :
+    shards           : 10 / 4
+    shard length     : 1000000
+    bytes per encode : 10485760
+    time taken       : 8.644541594
+    byte count       : 5000000000
+    MB/s             : 578.3996693902657
+=====
+encode :
+    shards           : 3 / 1
+    shard length     : 496
+    bytes per encode : 1024
+    time taken       : 0.000906863
+    byte count       : 744000
+    MB/s             : 820.410580208918
+encode :
+    shards           : 5 / 1
+    shard length     : 496
+    bytes per encode : 1024
+    time taken       : 0.001447262
+    byte count       : 1240000
+    MB/s             : 856.7902701791382
+encode :
+    shards           : 7 / 1
+    shard length     : 496
+    bytes per encode : 1024
+    time taken       : 0.001878607
+    byte count       : 1736000
+    MB/s             : 924.0889659199609
+encode :
+    shards           : 9 / 1
+    shard length     : 496
+    bytes per encode : 1024
+    time taken       : 0.002405394
+    byte count       : 2232000
+    MB/s             : 927.914512133979
+=====
+encode :
+    shards           : 5 / 2
+    shard length     : 1488
+    bytes per encode : 8192
+    time taken       : 0.022391674
+    byte count       : 3720000
+    MB/s             : 166.1331796809832
+encode :
+    shards           : 5 / 2
+    shard length     : 2480
+    bytes per encode : 8192
+    time taken       : 0.021906653
+    byte count       : 6200000
+    MB/s             : 283.0190444884483
+encode :
+    shards           : 5 / 2
+    shard length     : 3472
+    bytes per encode : 8192
+    time taken       : 0.025917932
+    byte count       : 8680000
+    MB/s             : 334.90326311528247
+encode :
+    shards           : 5 / 2
+    shard length     : 4464
+    bytes per encode : 8192
+    time taken       : 0.029600003
+    byte count       : 11160000
+    MB/s             : 377.02698881483224
+=====
