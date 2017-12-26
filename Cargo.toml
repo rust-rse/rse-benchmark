@@ -8,5 +8,3 @@ reed-solomon-erasure = { path = "reed-solomon-erasure" }
 rand = "0.4"
 time = "0.1"
 
-[profile.release]
-debug=true
