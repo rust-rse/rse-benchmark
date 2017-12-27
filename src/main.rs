@@ -176,6 +176,11 @@ fn main() {
     benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(65536));
     benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(10485760));
     println!("=====");
+    benchmark_encode(500, 10, 1, 1_000_000, ParallelParam::new(8192));
+    benchmark_encode(500, 10, 2, 1_000_000, ParallelParam::new(8192));
+    benchmark_encode(500, 10, 3, 1_000_000, ParallelParam::new(8192));
+    benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(8192));
+    println!("=====");
     benchmark_encode(500, 3, 1, 496, ParallelParam::new(1024));
     benchmark_encode(500, 5, 1, 496, ParallelParam::new(1024));
     benchmark_encode(500, 7, 1, 496, ParallelParam::new(1024));
@@ -186,11 +191,24 @@ fn main() {
     benchmark_encode(500, 10, 3, 496, ParallelParam::new(1024));
     benchmark_encode(500, 10, 4, 496, ParallelParam::new(1024));
     println!("=====");
+    benchmark_encode(500, 3, 2, 496, ParallelParam::new(1024));
+    benchmark_encode(500, 5, 2, 496, ParallelParam::new(1024));
+    benchmark_encode(500, 7, 2, 496, ParallelParam::new(1024));
+    benchmark_encode(500, 9, 2, 496, ParallelParam::new(1024));
+    /*println!("=====");
+    benchmark_encode(5000, 3,     1, 496, ParallelParam::new(8192));
+    benchmark_encode(5000, 5,     1, 496, ParallelParam::new(8192));
+    benchmark_encode(5000, 10,     1, 496, ParallelParam::new(8192));
+    benchmark_encode(100, 20, 1, 496 * 10, ParallelParam::new(8192));*/
+    /*println!("=====");
+    benchmark_encode(500, 5, 2, 496 * 1, ParallelParam::new(8192));
     benchmark_encode(500, 5, 2, 496 * 3, ParallelParam::new(8192));
     benchmark_encode(500, 5, 2, 496 * 5, ParallelParam::new(8192));
     benchmark_encode(500, 5, 2, 496 * 7, ParallelParam::new(8192));
     benchmark_encode(500, 5, 2, 496 * 9, ParallelParam::new(8192));
-    println!("=====");
+    println!("=====");*/
+    //benchmark_encode(500_000_000, 20, 10, 512, ParallelParam::new(8192));
+    //println!("=====");
     /*benchmark_encode(500, 10, 1, 496, ParallelParam::new(500));
     benchmark_encode(500, 3, 2, 496, ParallelParam::new(500));
     benchmark_encode(500, 10, 3, 496, ParallelParam::new(500));
