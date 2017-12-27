@@ -39,7 +39,9 @@ use inversion_tree::InversionTree;
 #[derive(PartialEq, Debug)]
 pub enum Error {
     TooFewShards,
+    TooManyShards,
     IncorrectShardSize,
+    TooFewShardsPresent,
     EmptyShard,
     InvalidShardsIndicator,
     InversionTreeError(inversion_tree::Error)
@@ -189,6 +191,19 @@ impl PartialEq for ReedSolomon {
             && self.matrix             == rhs.matrix
             && self.pparam             == rhs.pparam
     }
+}
+
+macro_rules! check_piece_count {
+    (
+        $self:ident, $pieces:ident
+    ) => {{
+        if $pieces.len() < $self.total_shard_count {
+            return Err(Error::TooFewShards);
+        }
+        if $pieces.len() > $self.total_shard_count {
+            return Err(Error::TooManyShards);
+        }
+    }}
 }
 
 impl ReedSolomon {
@@ -406,8 +421,11 @@ impl ReedSolomon {
             }
         }
         match size {
-            None    => return Err(Error::EmptyShard),
+            None    => return Err(Error::TooFewShardsPresent),
             Some(size) => {
+                if size == 0 {
+                    return Err(Error::EmptyShard);
+                }
                 for slice in slices.iter() {
                     match *slice {
                         None => {},
@@ -432,9 +450,7 @@ impl ReedSolomon {
 
     pub fn encode(&self,
                   slices : &mut [&mut [u8]]) -> Result<(), Error> {
-        if slices.len() < self.total_shard_count {
-            return Err(Error::TooFewShards);
-        }
+        check_piece_count!(self, slices);
 
         Self::check_mut_slices(slices)?;
 
@@ -468,9 +484,7 @@ impl ReedSolomon {
 
     pub fn verify(&self,
                   slices : &[&[u8]]) -> Result<bool, Error> {
-        if slices.len() < self.total_shard_count {
-            return Err(Error::TooFewShards)
-        }
+        check_piece_count!(self, slices);
 
         Self::check_slices(slices)?;
 
@@ -513,9 +527,7 @@ impl ReedSolomon {
                                    shards    : &mut [Option<Shard>],
                                    data_only : bool)
                                    -> Result<(), Error> {
-        if shards.len() < self.total_shard_count {
-            return Err(Error::TooFewShards)
-        }
+        check_piece_count!(self, shards);
 
         Self::check_option_shards(shards)?;
 
@@ -533,7 +545,7 @@ impl ReedSolomon {
                              shard_present.push(true); }
             }
         }
-        if number_present == self.data_shard_count {
+        if number_present == self.total_shard_count {
             // Cool.  All of the shards data data.  We don't
             // need to do anything.
             return Ok(())
@@ -541,7 +553,7 @@ impl ReedSolomon {
 
 	      // More complete sanity check
 	      if number_present < self.data_shard_count {
-		        return Err(Error::TooFewShards)
+		        return Err(Error::TooFewShardsPresent)
 	      }
 
         // Fill in new shards
@@ -613,9 +625,7 @@ impl ReedSolomon {
                             slices        : &mut [&mut [u8]],
                             slice_present : &[bool],
                             data_only     : bool) -> Result<(), Error> {
-        if slices.len() < self.total_shard_count {
-            return Err(Error::TooFewShards);
-        }
+        check_piece_count!(self, slices);
 
         Self::check_mut_slices(slices)?;
 
@@ -631,15 +641,15 @@ impl ReedSolomon {
                 number_present += 1;
             }
         }
-        if number_present == self.data_shard_count {
-            // Cool.  All of the shards data data.  We don't
+        if number_present == self.total_shard_count {
+            // Cool.  All of the shards are there.  We don't
             // need to do anything.
             return Ok(())
         }
 
 	      // More complete sanity check
 	      if number_present < self.data_shard_count {
-		        return Err(Error::TooFewShards)
+		        return Err(Error::TooFewShardsPresent)
 	      }
 
 	      // Pull out an array holding just the shards that
@@ -673,7 +683,7 @@ impl ReedSolomon {
                     leftover_parity_shards.push(slice);
                 }
             } else {
-                if sub_shards.len() < self.data_shard_count {
+                if i < self.data_shard_count {
                     missing_data_slices.push(slice);
                 } else {
                     missing_parity_slices.push(slice);

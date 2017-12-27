@@ -7,11 +7,11 @@
 
 Rust implementation of Reed-Solomon erasure coding
 
-This is a port of [BackBlaze's Java implementation](https://github.com/Backblaze/JavaReedSolomon) and [Klaus Post's Go implementation](https://github.com/klauspost/reedsolomon).
+This is a port of [BackBlaze's Java implementation](https://github.com/Backblaze/JavaReedSolomon), [Klaus Post's Go implementation](https://github.com/klauspost/reedsolomon), and [Nicolas Trangez's Haskell implementation](https://github.com/NicolasT/reedsolomon).
 
 Version `1.X.X` copies BackBlaze's implementation, and is less performant as there were fewer places where parallelism could be added.
 
-Version `2.X.X` copies Klaus Post's implementation.
+Version `2.X.X` copies Klaus Post's implementation, and will (hopefully) be using C source files from NicolasT's Haskell implementation.
 
 See [Notes](#notes) and [License](#license) section for details.
 
@@ -65,9 +65,11 @@ fn main () {
 ```
 
 ## Performance
-Machine : laptop with `Intel(R) Core(TM) i5-3337U CPU @ 1.80GHz (max 2.70GHz) 2 Cores 4 Threads`
+Version `1.X.X`, `2.X.X` do not utilise SIMD, as stable Rust still does not support SIMD yet. For the time being, the library is written in pure Rust.
 
-Version `1.X.X`, `2.X.X` do not utilise SIMD, as stable Rust still does not support SIMD yet. And also I am clueless on writing assembly code in general or linking to assembly code in Rust code(any help on the assembly code side of things would be really nice - shoot me an email/open issue/open PR/etc if you'd like to help). So for the time being, the library is written in pure Rust.
+I am looking into using the assembly code from Klaus's project and/or the SIMD C files from Nicolas's project, but this will not be done very soon. Contact me if you'd like to help.
+
+Machine : laptop with `Intel(R) Core(TM) i5-3337U CPU @ 1.80GHz (max 2.70GHz) 2 Cores 4 Threads`
 
 Version `2.X.X` is roughly 4-5x faster than version `1.X.X` for encoding, depending on threading etc, but is always faster than version `1.X.X`.
 
@@ -88,20 +90,25 @@ Contributions are welcome. Note that by submitting contributions, you agree that
 ## Notes
 The `1.X.X` implementation mostly copies [BackBlaze's Java implementation](https://github.com/Backblaze/JavaReedSolomon).
 
-The `2.X.X` implementation mostly copies [Klaus Post's Go implementation](https://github.com/klauspost/reedsolomon).
+The `2.X.X` implementation mostly copies [Klaus Post's Go implementation](https://github.com/klauspost/reedsolomon), and copies C files from [Nicolas Trangez's Haskell implementation](https://github.com/NicolasT/reedsolomon).
 
 The test suite for both versions copies [Klaus Post's Go implementation](https://github.com/klauspost/reedsolomon).
 
 ## License
-#### BackBlaze Java Reed-Solomon implementation
+#### BackBlaze's Java Reed-Solomon implementation
 The tables and main functions of ```build.rs``` are translated from [BackBlaze Java Implementation](https://github.com/Backblaze/JavaReedSolomon), and are under the same MIT License as used by the BackBlaze project
 
-The source code copied directly from BackBlaze's project repo are under the MIT License as used by the project, the files are in ```BackBlaze_JavaReedSolomon```
+The source code copied directly from BackBlaze's project repo are under the MIT License as used by the project, the files are in `BackBlaze_JavaReedSolomon`
 
-#### Klaus Post Go Reed-Solomon implementation
+#### Klaus Post's Go Reed-Solomon implementation
 The tables and main functions of ```src/*``` are translated from [Klaus Post's Go Implementation](https://github.com/klauspost/reedsolomon), and are under the same MIT License as used by Klaus Post's project
 
-The source code copied directly from Klaus Post's project repo are under the MIT License as used by the project, the files are in ```KlausPost_reedsolomon```
+The source code copied directly from Klaus Post's project repo are under the MIT License as used by the project, the files are in `KlausPost_reedsolomon`
+
+#### NicolasT's Haskell Reed-Solomon implementation
+The C files for SIMD operations are copied(with none/minor modifications) from [Nicolas Trangez's Haskell implementation](https://github.com/NicolasT/reedsolomon), and are under the same MIT License as used by NicolasT's project
+
+The source code copied directly from Nicolas Trangez's project repo are under the MIT License as used by the project, the files are in `NicolasT_reedsolomon`
 
 #### TL;DR
 All files are released under MIT License

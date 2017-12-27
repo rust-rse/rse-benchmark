@@ -200,54 +200,18 @@ pub fn option_shards_into_shards(shards : Vec<Option<Shard>>)
     result
 }
 
-/*
-/// Deep copies vector of shards
-///
-/// # Remarks
-///
-/// Normally doing `shards.clone()` (where `shards` is a `Vec<Shard>`) is okay,
-/// but the `Rc` in `Shard`'s definition will cause it to be a shallow copy, rather
-/// than a deep copy.
-///
-/// If the shards are used immutably, then a shallow copy is more desirable, as it
-/// has significantly lower overhead.
-///
-/// If the shards are used mutably, then a deep copy may be more desirable, as this
-/// will avoid unexpected bugs caused by multiple ownership.
-pub fn deep_clone_shards(shards : &Vec<Shard>) -> Vec<Shard> {
-    let mut result = Vec::with_capacity(shards.len());
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    for v in shards.iter() {
-        let inner : Box<[u8]> = v.clone();
-        result.push(inner);
+    #[test]
+    fn test_zero_len_shard() {
+        assert_eq!(vec![].into_boxed_slice(), make_zero_len_shard());
     }
-    result
-}*/
 
-/*
-/// Deep copies vector of option shards
-///
-/// # Remarks
-///
-/// Normally doing `shards.clone()` (where `shards` is a `Vec<Option<Shard>>`) is okay,
-/// but the `Rc` in `Shard`'s definition will cause it to be a shallow copy, rather
-/// than a deep copy.
-///
-/// If the shards are used immutably, then a shallow copy is more desirable, as it
-/// has significantly lower overhead.
-///
-/// If the shards are used mutably, then a deep copy may be more desirable, as this
-/// will avoid unexpected bugs caused by multiple ownership.
-pub fn deep_clone_option_shards(shards : &Vec<Option<Shard>>) -> Vec<Option<Shard>> {
-    let mut result = Vec::with_capacity(shards.len());
-
-    for v in shards.iter() {
-        let inner = match *v {
-            Some(ref x) => { let inner = x.clone();
-                             Some(inner) },
-            None        => None
-        };
-        result.push(inner);
+    #[test]
+    fn test_zero_len_shards() {
+        assert_eq!(vec![vec![].into_boxed_slice(), vec![].into_boxed_slice()],
+                   make_zero_len_shards(2));
     }
-    result
-}*/
+}

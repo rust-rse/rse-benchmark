@@ -275,6 +275,56 @@ mod tests {
     use super::Matrix;
 
     #[test]
+    fn test_matrix_col_count() {
+        let m1 = matrix!([1, 0, 0]);
+        let m2 = matrix!([0, 0, 0],
+                         [0, 0, 0]);
+        let m3 = Matrix::new(1, 4);
+
+        assert_eq!(3, m1.col_count());
+        assert_eq!(3, m2.col_count());
+        assert_eq!(4, m3.col_count());
+    }
+
+    #[test]
+    fn test_matrix_row_count() {
+        let m1 = matrix!([1, 0, 0]);
+        let m2 = matrix!([0, 0, 0],
+                         [0, 0, 0]);
+        let m3 = Matrix::new(1, 4);
+
+        assert_eq!(1, m1.row_count());
+        assert_eq!(2, m2.row_count());
+        assert_eq!(1, m3.row_count());
+    }
+
+    #[test]
+    fn test_matrix_swap_rows() {
+        {
+            let mut m1 = matrix!([1, 2, 3],
+                                 [4, 5, 6],
+                                 [7, 8, 9]);
+            let expect = matrix!([7, 8, 9],
+                                 [4, 5, 6],
+                                 [1, 2, 3]);
+            m1.swap_rows(0, 2);
+            assert_eq!(expect, m1);
+        }
+        {
+            let mut m1 = matrix!([1, 2, 3],
+                                 [4, 5, 6],
+                                 [7, 8, 9]);
+            let expect = m1.clone();
+            m1.swap_rows(0, 0);
+            assert_eq!(expect, m1);
+            m1.swap_rows(1, 1);
+            assert_eq!(expect, m1);
+            m1.swap_rows(2, 2);
+            assert_eq!(expect, m1);
+        }
+    }
+
+    #[test]
     #[should_panic]
     fn test_inconsistent_row_sizes() {
         matrix!([1, 0, 0], [0, 1], [0, 0, 1]); }

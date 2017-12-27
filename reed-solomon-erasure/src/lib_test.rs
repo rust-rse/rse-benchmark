@@ -38,6 +38,7 @@ fn assert_eq_shards(s1 : &Vec<Shard>, s2 : &Vec<Shard>) {
     }
 }
 
+/*
 fn is_increasing_and_contains_data_row(indices : &Vec<usize>) -> bool {
     let cols = indices.len();
     for i in 0..cols-1 {
@@ -98,7 +99,7 @@ fn find_singular_sub_matrix(m : Matrix) -> Option<Matrix> {
         };
     }
     None
-}
+}*/
 
 fn fill_random(arr : &mut Shard) {
     for a in arr.iter_mut() {
@@ -298,7 +299,7 @@ fn test_encoding() {
 }
 
 #[test]
-fn test_reconstruct() {
+fn test_reconstruct_shards() {
     let per_shard = 100_000;
 
     let r = ReedSolomon::new(8, 5);
@@ -341,6 +342,19 @@ fn test_reconstruct() {
         assert_eq_shards(&shards, &master_copy);
     }
 
+    // Try to reconstruct data only
+    shards[0] = None;
+    shards[1] = None;
+    shards[12] = None;
+    r.reconstruct_data_shards(&mut shards).unwrap();
+    {
+        let shards = option_shards_to_shards(&shards, None, None);
+        let blank_shard = make_blank_shard(per_shard);
+        assert_eq!(master_copy[0], shards[0]);
+        assert_eq!(master_copy[1], shards[1]);
+        assert_eq!(blank_shard, shards[12]);
+    }
+
     // Try to decode with 7 data and 1 parity shards
     shards[0] = None;
     shards[1] = None;
@@ -349,7 +363,107 @@ fn test_reconstruct() {
     shards[11] = None;
     shards[12] = None;
     assert_eq!(r.reconstruct_shards(&mut shards).unwrap_err(),
-               Error::TooFewShards);
+               Error::TooFewShardsPresent);
+}
+
+#[test]
+fn test_reconstruct() {
+    let r = ReedSolomon::new(2, 2);
+
+    let mut shards : [[u8; 3]; 4] = [[0, 1, 2],
+                                     [3, 4, 5],
+                                     [200, 201, 203],
+                                     [100, 101, 102]];
+
+    {
+        let mut shard_refs : Vec<&mut [u8]> =
+            Vec::with_capacity(3);
+
+        for shard in shards.iter_mut() {
+            shard_refs.push(shard);
+        }
+
+        r.encode(&mut shard_refs).unwrap();
+    }
+
+    {
+        let mut shard_refs : Vec<&mut [u8]> =
+            Vec::with_capacity(3);
+
+        for shard in shards.iter_mut() {
+            shard_refs.push(shard);
+        }
+
+        shard_refs[0][0] = 101;
+        shard_refs[0][1] = 102;
+        shard_refs[0][2] = 103;
+
+        let shards_present = [false, true, true, true];
+
+        r.reconstruct(&mut shard_refs, &shards_present).unwrap();
+    }
+
+    let expect : [[u8; 3]; 4] = [[0, 1, 2],
+                                 [3, 4, 5],
+                                 [6, 11, 12],
+                                 [5, 14, 11]];
+    assert_eq!(expect, shards);
+
+    {
+        let mut shard_refs : Vec<&mut [u8]> =
+            Vec::with_capacity(3);
+
+        for shard in shards.iter_mut() {
+            shard_refs.push(shard);
+        }
+
+        shard_refs[0][0] = 201;
+        shard_refs[0][1] = 202;
+        shard_refs[0][2] = 203;
+
+        shard_refs[2][0] = 101;
+        shard_refs[2][1] = 102;
+        shard_refs[2][2] = 103;
+
+        let shards_present = [false, true, false, true];
+
+        r.reconstruct_data(&mut shard_refs,
+                           &shards_present).unwrap();
+    }
+
+    let expect : [[u8; 3]; 4] = [[0, 1, 2],
+                                 [3, 4, 5],
+                                 [101, 102, 103],
+                                 [5, 14, 11]];
+    assert_eq!(expect, shards);
+
+    {
+        let mut shard_refs : Vec<&mut [u8]> =
+            Vec::with_capacity(3);
+
+        for shard in shards.iter_mut() {
+            shard_refs.push(shard);
+        }
+
+        shard_refs[2][0] = 101;
+        shard_refs[2][1] = 102;
+        shard_refs[2][2] = 103;
+
+        shard_refs[3][0] = 201;
+        shard_refs[3][1] = 202;
+        shard_refs[3][2] = 203;
+
+        let shards_present = [true, true, false, false];
+
+        r.reconstruct_data(&mut shard_refs,
+                           &shards_present).unwrap();
+    }
+
+    let expect : [[u8; 3]; 4] = [[0, 1, 2],
+                                 [3, 4, 5],
+                                 [101, 102, 103],
+                                 [201, 202, 203]];
+    assert_eq!(expect, shards);
 }
 
 /*
@@ -432,4 +546,128 @@ fn test_one_encode() {
 
     shards[8][0] += 1;
     assert!(!r.verify_shards(&shards).unwrap());
+}
+
+#[test]
+fn test_verify_too_few_shards() {
+    let r = ReedSolomon::new(3, 2);
+
+    let shards = make_random_shards!(10, 4);
+
+    assert_eq!(Error::TooFewShards, r.verify_shards(&shards).unwrap_err());
+}
+
+#[test]
+fn test_slices_or_shards_count_check() {
+    let r = ReedSolomon::new(3, 2);
+
+    {
+        let mut shards = make_random_shards!(10, 4);
+
+        assert_eq!(Error::TooFewShards, r.encode_shards(&mut shards).unwrap_err());
+        assert_eq!(Error::TooFewShards, r.verify_shards(&shards).unwrap_err());
+
+        let mut option_shards = shards_to_option_shards(&shards);
+
+        assert_eq!(Error::TooFewShards, r.reconstruct_shards(&mut option_shards).unwrap_err());
+    }
+    {
+        let mut shards = make_random_shards!(10, 6);
+
+        assert_eq!(Error::TooManyShards, r.encode_shards(&mut shards).unwrap_err());
+        assert_eq!(Error::TooManyShards, r.verify_shards(&shards).unwrap_err());
+
+        let mut option_shards = shards_to_option_shards(&shards);
+
+        assert_eq!(Error::TooManyShards, r.reconstruct_shards(&mut option_shards).unwrap_err());
+    }
+}
+
+#[test]
+fn test_check_slices_or_shards_size() {
+    let r = ReedSolomon::new(2, 2);
+
+    {
+        let mut shards = shards!([0, 0, 0],
+                                 [0, 1],
+                                 [1, 2, 3],
+                                 [0, 0, 0]);
+
+        assert_eq!(Error::IncorrectShardSize,
+                   r.encode_shards(&mut shards)
+                   .unwrap_err());
+        assert_eq!(Error::IncorrectShardSize,
+                   r.verify_shards(&shards)
+                   .unwrap_err());
+
+        let mut option_shards = shards_to_option_shards(&shards);
+
+        assert_eq!(Error::IncorrectShardSize,
+                   r.reconstruct_shards(&mut option_shards)
+                   .unwrap_err());
+    }
+    {
+        let mut shards = shards!([0, 1],
+                                 [0, 1],
+                                 [1, 2, 3],
+                                 [0, 0, 0]);
+
+        assert_eq!(Error::IncorrectShardSize,
+                   r.encode_shards(&mut shards)
+                   .unwrap_err());
+        assert_eq!(Error::IncorrectShardSize,
+                   r.verify_shards(&shards)
+                   .unwrap_err());
+
+        let mut option_shards = shards_to_option_shards(&shards);
+
+        assert_eq!(Error::IncorrectShardSize,
+                   r.reconstruct_shards(&mut option_shards)
+                   .unwrap_err());
+    }
+    {
+        let mut shards = shards!([0, 1],
+                                 [0, 1, 4],
+                                 [1, 2, 3],
+                                 [0, 0, 0]);
+
+        assert_eq!(Error::IncorrectShardSize,
+                   r.encode_shards(&mut shards)
+                   .unwrap_err());
+        assert_eq!(Error::IncorrectShardSize,
+                   r.verify_shards(&shards)
+                   .unwrap_err());
+
+        let mut option_shards = shards_to_option_shards(&shards);
+
+        assert_eq!(Error::IncorrectShardSize,
+                   r.reconstruct_shards(&mut option_shards)
+                   .unwrap_err());
+    }
+    {
+        let mut shards = shards!([],
+                                 [0, 1, 3],
+                                 [1, 2, 3],
+                                 [0, 0, 0]);
+
+        assert_eq!(Error::EmptyShard,
+                   r.encode_shards(&mut shards)
+                   .unwrap_err());
+        assert_eq!(Error::EmptyShard,
+                   r.verify_shards(&shards)
+                   .unwrap_err());
+
+        let mut option_shards = shards_to_option_shards(&shards);
+
+        assert_eq!(Error::EmptyShard,
+                   r.reconstruct_shards(&mut option_shards)
+                   .unwrap_err());
+    }
+    {
+        let mut option_shards = vec![None, None, None, None];
+
+        assert_eq!(Error::TooFewShardsPresent,
+                   r.reconstruct_shards(&mut option_shards)
+                   .unwrap_err());
+    }
 }
