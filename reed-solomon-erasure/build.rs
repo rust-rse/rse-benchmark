@@ -154,15 +154,20 @@ fn write_tables() {
     write_table!(2D => f, mul_table_high, "MUL_TABLE_HIGH", "u8");
 }
 
+#[cfg(not(features = "pure-rust"))]
+fn compile_simd_c() {
+    cc::Build::new()
+        .opt_level(3)
+        .flag("-march=native")
+        .file("simd_c/reedsolomon.c")
+        .compile("reedsolomon");
+}
+
+#[cfg(features = "pure-rust")]
+fn compile_simd_c() {}
+
 fn main() {
     write_tables();
 
-    cc::Build::new()
-        .file("simd_c/reedsolomon.c")
-        .flag("-msse2")
-        .flag("-msse3")
-        .flag("-mssse3")
-        .flag("-mavx2")
-        .opt_level(3)
-        .compile("reedsolomon");
+    compile_simd_c();
 }
