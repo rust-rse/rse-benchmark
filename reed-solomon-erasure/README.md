@@ -43,8 +43,8 @@ fn main () {
                                   [0, 0,  0,  0]);
 
     // Construct the parity shards
-    r.encode_parity(&mut master_copy, None, None);
-    
+    r.encode_shards(&mut master_copy).unwrap();
+
     // Make a copy and transform it into option shards arrangement
     // for feeding into decode_missing
     let mut shards = shards_into_option_shards(master_copy.clone());
@@ -52,17 +52,24 @@ fn main () {
     // We can remove up to 2 shards, which may be data or parity shards
     shards[0] = None;
     shards[4] = None;
-    
+
     // Try to reconstruct missing shards
-    r.decode_missing(&mut shards, None, None).unwrap();
-    
+    r.reconstruct_shards(&mut shards).unwrap();
+
     // Convert back to normal shard arrangement
     let result = option_shards_into_shards(shards);
-    
-    assert!(r.is_parity_correct(&result, None, None));
+
+    assert!(r.verify_shards(&result).unwrap());
     assert_eq!(master_copy, result);
 }
 ```
+
+## Benchmark it yourself
+You can test performance under different configurations quickly(e.g. data parity shards ratio, parallel parameters)
+by cloning this repo : https://github.com/darrenldl/rse-benchmark
+
+`rse-benchmark` contains a copy of this library(usually a fully functional dev version), so you only need to adjust `main.rs`
+then do `cargo run --release` to start the benchmark.
 
 ## Performance
 Version `1.X.X`, `2.X.X` do not utilise SIMD, as stable Rust still does not support SIMD yet. For the time being, the library is written in pure Rust.
@@ -105,7 +112,7 @@ The tables and main functions of ```src/*``` are translated from [Klaus Post's G
 
 The source code copied directly from Klaus Post's project repo are under the MIT License as used by the project, the files are in `KlausPost_reedsolomon`
 
-#### NicolasT's Haskell Reed-Solomon implementation
+#### Nicolas Trangez's Haskell Reed-Solomon implementation
 The C files for SIMD operations are copied(with none/minor modifications) from [Nicolas Trangez's Haskell implementation](https://github.com/NicolasT/reedsolomon), and are under the same MIT License as used by NicolasT's project
 
 The source code copied directly from Nicolas Trangez's project repo are under the MIT License as used by the project, the files are in `NicolasT_reedsolomon`

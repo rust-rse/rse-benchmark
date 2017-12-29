@@ -1,4 +1,4 @@
-//! This crate providers an encoder/decoder for Reed-Solomon erasure code
+//! This crate provides an encoder/decoder for Reed-Solomon erasure code.
 //!
 //! Please note that erasure coding means errors are not directly detected or corrected,
 //! but missing data pieces(shards) can be reconstructed given that
@@ -27,7 +27,6 @@ pub use shard_utils::option_shards_into_shards;
 
 extern crate rayon;
 use rayon::prelude::*;
-//use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
 extern crate smallvec;
@@ -47,29 +46,29 @@ pub enum Error {
     InversionTreeError(inversion_tree::Error)
 }
 
-/// Main data type used by this library
+/// Convenience data type provided by this library.
 pub type Shard = Box<[u8]>;
 
-/// Constructs a shard
+/// Constructs a shard.
 ///
 /// # Example
 /// ```rust
 /// # #[macro_use] extern crate reed_solomon_erasure;
 /// # use reed_solomon_erasure::*;
 /// # fn main () {
-/// let shard = shard!(1, 2, 3);
+/// let shard = shard![1, 2, 3];
 /// # }
 /// ```
 #[macro_export]
 macro_rules! shard {
-    (
+    [
         $( $x:expr ),*
-    ) => {{
+    ] => {{
         vec![ $( $x as u8 ),* ].into_boxed_slice()
     }}
 }
 
-/// Constructs vector of shards
+/// Constructs vector of shards.
 ///
 /// # Example
 /// ```rust
@@ -89,7 +88,128 @@ macro_rules! shards {
     }}
 }
 
-pub fn shards_to_slices<'a>(shards : &'a [Shard]) -> Vec<&'a [u8]> {
+/// Makes it easier to work with 2D slices, arrays, etc.
+///
+/// # Examples
+/// ## Byte arrays on stack to `Vec<&[u8]>`
+/// ```rust
+/// # #[macro_use] extern crate reed_solomon_erasure;
+/// # fn main () {
+/// let array : [[u8; 3]; 2] = [[1, 2, 3],
+///                             [4, 5, 6]];
+///
+/// let refs : Vec<&[u8]> =
+///     convert_2D_slices!(array =to_vec=> &[u8]);
+/// # }
+/// ```
+/// ## Byte arrays on stack to `Vec<&mut [u8]>` (borrow mutably)
+/// ```rust
+/// # #[macro_use] extern crate reed_solomon_erasure;
+/// # fn main () {
+/// let mut array : [[u8; 3]; 2] = [[1, 2, 3],
+///                                 [4, 5, 6]];
+///
+/// let refs : Vec<&mut [u8]> =
+///     convert_2D_slices!(array =to_mut_vec=> &mut [u8]);
+/// # }
+/// ```
+/// ## Byte arrays on stack to `SmallVec<[&mut [u8]; 32]>` (borrow mutably)
+/// ```rust
+/// # #[macro_use] extern crate reed_solomon_erasure;
+/// # extern crate smallvec;
+/// # use smallvec::SmallVec;
+/// # fn main () {
+/// let mut array : [[u8; 3]; 2] = [[1, 2, 3],
+///                                 [4, 5, 6]];
+///
+/// let refs : SmallVec<[&mut [u8]; 32]> =
+///     convert_2D_slices!(array =to_mut=> SmallVec<[&mut [u8]; 32]>,
+///                        SmallVec::with_capacity);
+/// # }
+/// ```
+/// ## Shard array to `SmallVec<[&mut [u8]; 32]>` (borrow mutably)
+/// ```rust
+/// # #[macro_use] extern crate reed_solomon_erasure;
+/// # extern crate smallvec;
+/// # use smallvec::SmallVec;
+/// # fn main () {
+/// let mut shards = shards!([1, 2, 3],
+///                          [4, 5, 6]);
+///
+/// let refs : SmallVec<[&mut [u8]; 32]> =
+///     convert_2D_slices!(shards =to_mut=> SmallVec<[&mut [u8]; 32]>,
+///                        SmallVec::with_capacity);
+/// # }
+/// ```
+/// ## Shard array to `Vec<&mut [u8]>` (borrow mutably) into `SmallVec<[&mut [u8]; 32]>` (move)
+/// ```rust
+/// # #[macro_use] extern crate reed_solomon_erasure;
+/// # extern crate smallvec;
+/// # use smallvec::SmallVec;
+/// # fn main () {
+/// let mut shards = shards!([1, 2, 3],
+///                          [4, 5, 6]);
+///
+/// let refs1 = convert_2D_slices!(shards =to_mut_vec=> &mut [u8]);
+///
+/// let refs2 : SmallVec<[&mut [u8]; 32]> =
+///     convert_2D_slices!(refs1 =into=> SmallVec<[&mut [u8]; 32]>,
+///                        SmallVec::with_capacity);
+/// # }
+/// ```
+#[macro_export]
+macro_rules! convert_2D_slices {
+    (
+        $slice:ident =into_vec=> $dst_type:ty
+    ) => {
+        convert_2D_slices!($slice =into=> Vec<$dst_type>,
+                           Vec::with_capacity)
+    };
+    (
+        $slice:ident =to_vec=> $dst_type:ty
+    ) => {
+        convert_2D_slices!($slice =to=> Vec<$dst_type>,
+                           Vec::with_capacity)
+    };
+    (
+        $slice:ident =to_mut_vec=> $dst_type:ty
+    ) => {
+        convert_2D_slices!($slice =to_mut=> Vec<$dst_type>,
+                           Vec::with_capacity)
+    };
+    (
+        $slice:ident =into=> $dst_type:ty, $with_capacity:path
+    ) => {{
+        let mut result : $dst_type =
+            $with_capacity($slice.len());
+        for i in $slice.into_iter() {
+            result.push(i);
+        }
+        result
+    }};
+    (
+        $slice:ident =to=> $dst_type:ty, $with_capacity:path
+    ) => {{
+        let mut result : $dst_type =
+            $with_capacity($slice.len());
+        for i in $slice.iter() {
+            result.push(i);
+        }
+        result
+    }};
+    (
+        $slice:ident =to_mut=> $dst_type:ty, $with_capacity:path
+    ) => {{
+        let mut result : $dst_type =
+            $with_capacity($slice.len());
+        for i in $slice.iter_mut() {
+            result.push(i);
+        }
+        result
+    }}
+}
+
+fn shards_to_slices<'a>(shards : &'a [Shard]) -> Vec<&'a [u8]> {
     let mut result : Vec<&[u8]> =
         Vec::with_capacity(shards.len());
     for shard in shards.into_iter() {
@@ -98,7 +218,7 @@ pub fn shards_to_slices<'a>(shards : &'a [Shard]) -> Vec<&'a [u8]> {
     result
 }
 
-pub fn mut_shards_to_mut_slices(shards : &mut [Shard])
+/*fn mut_shards_to_mut_slices(shards : &mut [Shard])
                             -> Vec<&mut [u8]> {
     let mut result : Vec<&mut [u8]> =
         Vec::with_capacity(shards.len());
@@ -106,9 +226,9 @@ pub fn mut_shards_to_mut_slices(shards : &mut [Shard])
         result.push(shard);
     }
     result
-}
+}*/
 
-pub fn mut_option_shards_to_mut_slices<'a>(shards : &'a mut [Option<Shard>])
+fn mut_option_shards_to_mut_slices<'a>(shards : &'a mut [Option<Shard>])
                                        -> Vec<&'a mut [u8]> {
     let mut result : Vec<&mut [u8]> =
         Vec::with_capacity(shards.len());
@@ -132,18 +252,26 @@ pub fn mut_option_shards_to_mut_slices<'a>(shards : &'a mut [Option<Shard>])
     }
 }*/
 
-/// Reed-Solomon erasure code encoder/decoder
+/// Reed-Solomon erasure code encoder/decoder.
 ///
-/// # Remarks
-/// Notes about usage of `offset` and `byte_count` for all methods/functions below
+/// # Common error handling
 ///
-/// `offset` refers to start of the shard you want to as starting point for encoding/decoding.
+/// ### For `encode`, `encode_shards`, `verify`, `verify_shards`, `reconstruct`, `reconstruct_data`, `reconstruct_shards`, `reconstruct_data_shards`
 ///
-/// `offset` defaults to 0 if it is `None`.
+/// Return `Error::TooFewShards` or `Error::TooManyShards`
+/// when the number of provided shards
+/// does not match the codec's one.
 ///
-///  `byte_count` refers to number of bytes, starting from `offset` to use for encoding/decoding.
+/// Return `Error::EmptyShard` when the first shard provided is
+/// of zero length.
 ///
-///  `byte_count` defaults to length of shard if it is `None`.
+/// Return `Error::IncorrectShardSize` when the provided shards
+/// are of different length.
+///
+/// ### For `reconstruct`, `reconstruct_data`, `reconstruct_shards`, `reconstruct_data_shards`
+///
+/// Return `Error::TooFewShardsPresent` when there are not
+/// enough shards for reconstruction.
 #[derive(Debug)]
 pub struct ReedSolomon {
     data_shard_count   : usize,
@@ -155,9 +283,13 @@ pub struct ReedSolomon {
     pparam             : ParallelParam
 }
 
-/// Parameters for parallelism
+/// Parameters for parallelism.
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub struct ParallelParam {
+    /// Number of bytes to split the slices into for computations
+    /// which can be done in parallel.
+    ///
+    /// Default is 8192.
     pub bytes_per_encode  : usize,
     //pub shards_per_encode : usize,
 }
@@ -206,6 +338,22 @@ macro_rules! check_piece_count {
     }}
 }
 
+macro_rules! check_slices {
+    (
+        $slices:ident
+    ) => {{
+        let size = $slices[0].len();
+        if size == 0 {
+            return Err(Error::EmptyShard);
+        }
+        for slice in $slices.iter() {
+            if slice.len() != size {
+                return Err(Error::IncorrectShardSize);
+            }
+        }
+    }}
+}
+
 impl ReedSolomon {
     fn get_parity_rows(&self) -> SmallVec<[&[u8]; 32]> {
         let mut parity_rows  = SmallVec::with_capacity(self.parity_shard_count);
@@ -225,6 +373,7 @@ impl ReedSolomon {
         vandermonde.multiply(&top.invert().unwrap())
     }
 
+    /// Creates a new instance of Reed-Solomon erasure code encoder/decoder.
     pub fn new(data_shards : usize,
                parity_shards : usize) -> ReedSolomon {
         Self::with_pparam(data_shards,
@@ -232,7 +381,7 @@ impl ReedSolomon {
                           ParallelParam::with_default())
     }
 
-    /// Creates a new instance of Reed-Solomon erasure code encoder/decoder
+    /// Creates a new instance of Reed-Solomon erasure code encoder/decoder with custom `ParallelParam`.
     pub fn with_pparam(data_shards   : usize,
                        parity_shards : usize,
                        pparam        : ParallelParam) -> ReedSolomon {
@@ -366,32 +515,6 @@ impl ReedSolomon {
         !any_shard_mismatch  // if it is not that case that any of the shard has a mismatch
     }
 
-    fn check_slices(slices : &[&[u8]]) -> Result<(), Error> {
-        let size = slices[0].len();
-        if size == 0 {
-            return Err(Error::EmptyShard);
-        }
-        for slice in slices.iter() {
-            if slice.len() != size {
-                return Err(Error::IncorrectShardSize);
-            }
-        }
-        Ok(())
-    }
-
-    fn check_mut_slices(slices : &[&mut [u8]]) -> Result<(), Error> {
-        let size = slices[0].len();
-        if size == 0 {
-            return Err(Error::EmptyShard);
-        }
-        for slice in slices.iter() {
-            if slice.len() != size {
-                return Err(Error::IncorrectShardSize);
-            }
-        }
-        Ok(())
-    }
-
     fn option_shards_size(slices : &[Option<Shard>]) -> Result<usize, Error> {
         let mut size = None;
         for slice in slices.iter() {
@@ -441,18 +564,29 @@ impl ReedSolomon {
         Ok(())
     }
 
+    /// Constructs the parity shards.
+    ///
+    /// The slots where the parity shards sit at will be overwritten.
+    ///
+    /// This is a wrapper of `encode`.
     pub fn encode_shards(&self,
                          shards : &mut [Shard]) -> Result<(), Error> {
-        let mut slices = mut_shards_to_mut_slices(shards);
+        let mut slices : SmallVec<[&mut [u8]; 32]> =
+            convert_2D_slices!(shards =into=> SmallVec<[&mut [u8]; 32]>,
+                               SmallVec::with_capacity);
 
         self.encode(&mut slices)
     }
 
+    /// Constructs the parity shards.
+    ///
+    /// The slots where the parity shards sit at will be overwritten.
+    ///
     pub fn encode(&self,
                   slices : &mut [&mut [u8]]) -> Result<(), Error> {
         check_piece_count!(self, slices);
 
-        Self::check_mut_slices(slices)?;
+        check_slices!(slices);
 
         let parity_rows = self.get_parity_rows();
 
@@ -460,11 +594,9 @@ impl ReedSolomon {
         let (mut_input, output) =
             slices.split_at_mut(self.data_shard_count);
 
-        let mut input : Vec<&[u8]> =
-            Vec::with_capacity(mut_input.len());
-        for i in mut_input.into_iter() {
-            input.push(i);
-        }
+        let input =
+            convert_2D_slices!(mut_input =into=> SmallVec<[&[u8]; 32]>,
+                               SmallVec::with_capacity);
 
 	      // Do the coding.
         self.code_some_slices(&parity_rows,
@@ -474,6 +606,9 @@ impl ReedSolomon {
         Ok(())
     }
 
+    /// Checks if the parity shards are correct.
+    ///
+    /// This is a wrapper of `verify`.
     pub fn verify_shards(&self,
                          shards : &[Shard]) -> Result<bool, Error> {
         let slices =
@@ -482,11 +617,12 @@ impl ReedSolomon {
         self.verify(&slices)
     }
 
+    /// Checks if the parity shards are correct.
     pub fn verify(&self,
                   slices : &[&[u8]]) -> Result<bool, Error> {
         check_piece_count!(self, slices);
 
-        Self::check_slices(slices)?;
+        check_slices!(slices);
 
         let to_check = &slices[self.data_shard_count..];
 
@@ -497,6 +633,10 @@ impl ReedSolomon {
                                   to_check))
     }
 
+    /// Reconstructs all shards.
+    ///
+    /// `reconstruct`, `reconstruct_data`, `reconstruct_shards`,
+    /// `reconstruct_data_shards` share the same core code base.
     pub fn reconstruct(&self,
                        slices        : &mut [&mut [u8]],
                        slice_present : &[bool]) -> Result<(), Error> {
@@ -505,6 +645,10 @@ impl ReedSolomon {
                                   false)
     }
 
+    /// Reconstructs only the data shards.
+    ///
+    /// `reconstruct`, `reconstruct_data`, `reconstruct_shards`,
+    /// `reconstruct_data_shards` share the same core code base.
     pub fn reconstruct_data(&self,
                             slices        : &mut [&mut [u8]],
                             slice_present : &[bool]) -> Result<(), Error> {
@@ -513,11 +657,28 @@ impl ReedSolomon {
                                   true)
     }
 
+    /// Reconstructs all shards.
+    ///
+    /// This fills in the missing shards with blank shards only
+    /// if there are enough shards for reconstruction.
+    ///
+    /// `reconstruct`, `reconstruct_data`, `reconstruct_shards`,
+    /// `reconstruct_data_shards` share the same core code base.
     pub fn reconstruct_shards(&self,
                               shards : &mut [Option<Shard>]) -> Result<(), Error> {
         self.reconstruct_shards_internal(shards, false)
     }
 
+    /// Reconstructs only the data shards.
+    ///
+    /// This fills in the missing shards with blank shards only
+    /// if there are enough shards for reconstruction.
+    ///
+    /// Note that the missing parity shards are filled in with
+    /// blank shards even though they are not used.
+    ///
+    /// `reconstruct`, `reconstruct_data`, `reconstruct_shards`,
+    /// `reconstruct_data_shards` share the same core code base.
     pub fn reconstruct_data_shards(&self,
                                    shards : &mut [Option<Shard>]) -> Result<(), Error> {
         self.reconstruct_shards_internal(shards, true)
@@ -627,7 +788,7 @@ impl ReedSolomon {
                             data_only     : bool) -> Result<(), Error> {
         check_piece_count!(self, slices);
 
-        Self::check_mut_slices(slices)?;
+        check_slices!(slices);
 
         if slices.len() != slice_present.len() {
             return Err(Error::InvalidShardsIndicator);
