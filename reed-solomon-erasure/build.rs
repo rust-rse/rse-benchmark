@@ -160,7 +160,9 @@ fn main() {
     cc::Build::new()
         .file("simd_c/reedsolomon.c")
         .flag("-msse2")
+        .flag("-msse3")
         .flag("-mssse3")
         .flag("-mavx2")
+        .opt_level(3)
         .compile("reedsolomon");
 }
