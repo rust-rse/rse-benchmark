@@ -185,16 +185,26 @@ fn main() {
     benchmark_encode(500, 5, 1, 496, ParallelParam::new(1024));
     benchmark_encode(500, 7, 1, 496, ParallelParam::new(1024));
     benchmark_encode(500, 9, 1, 496, ParallelParam::new(1024));
+    /*println!("=====");
+    benchmark_encode(1000, 10, 1, 496, ParallelParam::new(1024));
+    benchmark_encode(1000, 10, 2, 496, ParallelParam::new(1024));
+    benchmark_encode(1000, 10, 3, 496, ParallelParam::new(1024));
+    benchmark_encode(1000, 10, 4, 496, ParallelParam::new(1024));
     println!("=====");
-    benchmark_encode(500, 10, 1, 496, ParallelParam::new(1024));
-    benchmark_encode(500, 10, 2, 496, ParallelParam::new(1024));
-    benchmark_encode(500, 10, 3, 496, ParallelParam::new(1024));
-    benchmark_encode(500, 10, 4, 496, ParallelParam::new(1024));
+    benchmark_encode(1000, 10, 1, 4096, ParallelParam::new(1024));
+    benchmark_encode(1000, 10, 2, 4096, ParallelParam::new(1024));
+    benchmark_encode(1000, 10, 3, 4096, ParallelParam::new(1024));
+    benchmark_encode(1000, 10, 4, 4096, ParallelParam::new(1024));
     println!("=====");
+    benchmark_encode(1000, 10, 1, 4096, ParallelParam::new(8192));
+    benchmark_encode(1000, 10, 2, 4096, ParallelParam::new(8192));
+    benchmark_encode(1000, 10, 3, 4096, ParallelParam::new(8192));
+    benchmark_encode(1000, 10, 4, 4096, ParallelParam::new(8192));*/
+    /*println!("=====");
     benchmark_encode(500, 3, 2, 496, ParallelParam::new(1024));
     benchmark_encode(500, 5, 2, 496, ParallelParam::new(1024));
     benchmark_encode(500, 7, 2, 496, ParallelParam::new(1024));
-    benchmark_encode(500, 9, 2, 496, ParallelParam::new(1024));
+    benchmark_encode(500, 9, 2, 496, ParallelParam::new(1024));*/
     /*println!("=====");
     benchmark_encode(5000, 3,     1, 496, ParallelParam::new(8192));
     benchmark_encode(5000, 5,     1, 496, ParallelParam::new(8192));
