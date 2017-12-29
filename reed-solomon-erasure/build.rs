@@ -3,6 +3,8 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 
+extern crate cc;
+
 const FIELD_SIZE : usize = 256;
 
 const GENERATING_POLYNOMIAL : usize = 29;
@@ -154,4 +156,11 @@ fn write_tables() {
 
 fn main() {
     write_tables();
+
+    cc::Build::new()
+        .file("simd_c/reedsolomon.c")
+        .flag("-msse2")
+        .flag("-mssse3")
+        .flag("-mavx2")
+        .compile("reedsolomon");
 }
