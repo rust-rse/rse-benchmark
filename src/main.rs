@@ -157,7 +157,7 @@ fn main() {
     benchmark_encode(500, 5, 2, 1_000_000, ParallelParam::new(32768));
     benchmark_encode(500, 5, 2, 1_000_000, ParallelParam::new(65536));
     benchmark_encode(500, 5, 2, 1_000_000, ParallelParam::new(10485760));
-    println!("=====");
+    /*println!("=====");
     benchmark_encode_inplace(500, ParallelParam::new(1024));
     benchmark_encode_inplace(500, ParallelParam::new(2048));
     benchmark_encode_inplace(500, ParallelParam::new(4096));
@@ -165,7 +165,7 @@ fn main() {
     benchmark_encode_inplace(500, ParallelParam::new(16384));
     benchmark_encode_inplace(500, ParallelParam::new(32768));
     benchmark_encode_inplace(500, ParallelParam::new(65536));
-    benchmark_encode_inplace(500, ParallelParam::new(10485760));
+    benchmark_encode_inplace(500, ParallelParam::new(10485760));*/
     println!("=====");
     benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(1024));
     benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(2048));
