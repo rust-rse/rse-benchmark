@@ -3,7 +3,6 @@
 extern crate rand;
 
 use super::*;
-use super::Error;
 use super::shard_utils;
 use self::rand::{thread_rng, Rng};
 
@@ -153,7 +152,7 @@ fn find_singular_sub_matrix(m : Matrix) -> Option<Matrix> {
     None
 }*/
 
-fn fill_random(arr : &mut Shard) {
+fn fill_random(arr : &mut [u8]) {
     for a in arr.iter_mut() {
         *a = rand::random::<u8>();
     }
@@ -506,6 +505,51 @@ fn test_reconstruct() {
     assert_eq!(expect, shards);
 }
 
+#[test]
+fn test_reconstruct_error_handling() {
+    let r = ReedSolomon::new(2, 2);
+
+    let mut shards : [[u8; 3]; 4] = [[0, 1, 2],
+                                     [3, 4, 5],
+                                     [200, 201, 203],
+                                     [100, 101, 102]];
+
+    {
+        let mut shard_refs : Vec<&mut [u8]> =
+            Vec::with_capacity(3);
+
+        for shard in shards.iter_mut() {
+            shard_refs.push(shard);
+        }
+
+        r.encode(&mut shard_refs).unwrap();
+    }
+
+    {
+        let mut shard_refs =
+            convert_2D_slices!(shards =to_mut_vec=> &mut [u8]);
+
+        shard_refs[0][0] = 101;
+        shard_refs[0][1] = 102;
+        shard_refs[0][2] = 103;
+
+        let shards_present = [false, true, true, true, true];
+        assert_eq!(Error::InvalidShardsIndicator,
+                   r.reconstruct(&mut shard_refs, &shards_present).unwrap_err());
+
+        let shards_present = [false, true, true];
+        assert_eq!(Error::InvalidShardsIndicator,
+                   r.reconstruct(&mut shard_refs, &shards_present).unwrap_err());
+
+        let shards_present = [true, false, false, false];
+        assert_eq!(Error::TooFewShardsPresent,
+                   r.reconstruct(&mut shard_refs, &shards_present).unwrap_err());
+
+        let shards_present = [true, false, false, true];
+        r.reconstruct(&mut shard_refs, &shards_present).unwrap();
+    }
+}
+
 /*
 #[test]
 fn test_is_parity_correct() {
@@ -709,5 +753,272 @@ fn test_check_slices_or_shards_size() {
         assert_eq!(Error::TooFewShardsPresent,
                    r.reconstruct_shards(&mut option_shards)
                    .unwrap_err());
+    }
+}
+
+#[test]
+fn shardbyshard_encode_correctly() {
+    {
+        let r       = ReedSolomon::new(10, 3);
+        let mut sbs = ShardByShard::new(&r);
+
+        let mut shards = make_random_shards!(10_000, 13);
+        let mut shards_copy = shards.clone();
+
+        r.encode_shards(&mut shards).unwrap();
+
+        for i in 0..10 {
+            assert_eq!(i, sbs.cur_input_index());
+
+            sbs.encode_shard(&mut shards_copy).unwrap();
+        }
+
+        assert!(sbs.parity_ready());
+
+        assert_eq!(shards, shards_copy);
+
+        sbs.reset_force();
+
+        assert_eq!(0, sbs.cur_input_index());
+    }
+    {
+        let r       = ReedSolomon::new(10, 3);
+        let mut sbs = ShardByShard::new(&r);
+
+        let mut slices : [[u8; 100]; 13] =
+            [[0; 100]; 13];
+        for slice in slices.iter_mut() {
+            fill_random(slice);
+        }
+        let mut slices_copy = slices.clone();
+
+        {
+            let mut slice_refs =
+                convert_2D_slices!(slices      =to_mut_vec=> &mut [u8]);
+            let mut slice_copy_refs =
+                convert_2D_slices!(slices_copy =to_mut_vec=> &mut [u8]);
+
+            r.encode(&mut slice_refs).unwrap();
+
+            for i in 0..10 {
+                assert_eq!(i, sbs.cur_input_index());
+
+                sbs.encode(&mut slice_copy_refs).unwrap();
+            }
+        }
+
+        assert!(sbs.parity_ready());
+
+        for a in 0..13 {
+            for b in 0..100 {
+                assert_eq!(slices[a][b], slices_copy[a][b]);
+            }
+        }
+
+        sbs.reset_force();
+
+        assert_eq!(0, sbs.cur_input_index());
+    }
+}
+
+#[test]
+fn shardbyshard_encode_correctly_more_rigorous() {
+    {
+        let r       = ReedSolomon::new(10, 3);
+        let mut sbs = ShardByShard::new(&r);
+
+        let mut shards = make_random_shards!(10_000, 13);
+        let mut shards_copy = make_random_shards!(10_000, 13);
+
+        r.encode_shards(&mut shards).unwrap();
+
+        for i in 0..10 {
+            assert_eq!(i, sbs.cur_input_index());
+
+            shards_copy[i].clone_from_slice(&shards[i]);
+            sbs.encode_shard(&mut shards_copy).unwrap();
+            fill_random(&mut shards_copy[i]);
+        }
+
+        assert!(sbs.parity_ready());
+
+        for i in 0..10 {
+            shards_copy[i].clone_from_slice(&shards[i]);
+        }
+
+        assert_eq!(shards, shards_copy);
+
+        sbs.reset_force();
+
+        assert_eq!(0, sbs.cur_input_index());
+    }
+    {
+        let r       = ReedSolomon::new(10, 3);
+        let mut sbs = ShardByShard::new(&r);
+
+        let mut slices : [[u8; 100]; 13] =
+            [[0; 100]; 13];
+        for slice in slices.iter_mut() {
+            fill_random(slice);
+        }
+
+        let mut slices_copy : [[u8; 100]; 13] =
+            [[0; 100]; 13];
+        for slice in slices_copy.iter_mut() {
+            fill_random(slice);
+        }
+
+        {
+            let mut slice_refs =
+                convert_2D_slices!(slices      =to_mut_vec=> &mut [u8]);
+            let mut slice_copy_refs =
+                convert_2D_slices!(slices_copy =to_mut_vec=> &mut [u8]);
+
+            r.encode(&mut slice_refs).unwrap();
+
+            for i in 0..10 {
+                assert_eq!(i, sbs.cur_input_index());
+
+                slice_copy_refs[i].clone_from_slice(&slice_refs[i]);
+                sbs.encode(&mut slice_copy_refs).unwrap();
+                fill_random(&mut slice_copy_refs[i]);
+            }
+        }
+
+        for i in 0..10 {
+            slices_copy[i].clone_from_slice(&slices[i]);
+        }
+
+        assert!(sbs.parity_ready());
+
+        for a in 0..13 {
+            for b in 0..100 {
+                assert_eq!(slices[a][b], slices_copy[a][b]);
+            }
+        }
+
+        sbs.reset_force();
+
+        assert_eq!(0, sbs.cur_input_index());
+    }
+}
+
+#[test]
+fn shardbyshard_error_handling() {
+    {
+        let r       = ReedSolomon::new(10, 3);
+        let mut sbs = ShardByShard::new(&r);
+
+        let mut shards = make_random_shards!(10_000, 13);
+
+        for i in 0..10 {
+            assert_eq!(i, sbs.cur_input_index());
+
+            sbs.encode_shard(&mut shards).unwrap();
+        }
+
+        assert!(sbs.parity_ready());
+
+        assert_eq!(SBSError::TooManyCalls, sbs.encode_shard(&mut shards).unwrap_err());
+
+        sbs.reset().unwrap();
+
+        for i in 0..1 {
+            assert_eq!(i, sbs.cur_input_index());
+
+            sbs.encode_shard(&mut shards).unwrap();
+        }
+
+        assert_eq!(SBSError::LeftoverShards, sbs.reset().unwrap_err());
+
+        sbs.reset_force();
+
+        assert_eq!(0, sbs.cur_input_index());
+    }
+    {
+        let r       = ReedSolomon::new(10, 3);
+        let mut sbs = ShardByShard::new(&r);
+
+        let mut slices : [[u8; 100]; 13] =
+            [[0; 100]; 13];
+        for slice in slices.iter_mut() {
+            fill_random(slice);
+        }
+
+        let mut slice_refs =
+            convert_2D_slices!(slices      =to_mut_vec=> &mut [u8]);
+
+        for i in 0..10 {
+            assert_eq!(i, sbs.cur_input_index());
+
+            sbs.encode(&mut slice_refs).unwrap();
+        }
+
+        assert!(sbs.parity_ready());
+
+        assert_eq!(SBSError::TooManyCalls, sbs.encode(&mut slice_refs).unwrap_err());
+
+        sbs.reset().unwrap();
+
+        for i in 0..1 {
+            assert_eq!(i, sbs.cur_input_index());
+
+            sbs.encode(&mut slice_refs).unwrap();
+        }
+
+        assert_eq!(SBSError::LeftoverShards, sbs.reset().unwrap_err());
+
+        sbs.reset_force();
+
+        assert_eq!(0, sbs.cur_input_index());
+    }
+}
+
+#[test]
+fn test_encode_single_error_handling() {
+    let r = ReedSolomon::new(10, 3);
+
+    {
+        let mut shards = make_random_shards!(1000, 13);
+
+        for i in 0..10 {
+            r.encode_single_shard(i, &mut shards).unwrap();
+        }
+
+        assert_eq!(Error::InvalidInputIndex,
+                   r.encode_single_shard(10, &mut shards).unwrap_err());
+        assert_eq!(Error::InvalidInputIndex,
+                   r.encode_single_shard(11, &mut shards).unwrap_err());
+        assert_eq!(Error::InvalidInputIndex,
+                   r.encode_single_shard(12, &mut shards).unwrap_err());
+        assert_eq!(Error::InvalidInputIndex,
+                   r.encode_single_shard(13, &mut shards).unwrap_err());
+        assert_eq!(Error::InvalidInputIndex,
+                   r.encode_single_shard(14, &mut shards).unwrap_err());
+    }
+    {
+        let mut slices : [[u8; 1000]; 13] =
+            [[0; 1000]; 13];
+        for slice in slices.iter_mut() {
+            fill_random(slice);
+        }
+
+        let mut slice_refs =
+            convert_2D_slices!(slices      =to_mut_vec=> &mut [u8]);
+
+        for i in 0..10 {
+            r.encode_single(i, &mut slice_refs).unwrap();
+        }
+
+        assert_eq!(Error::InvalidInputIndex,
+                   r.encode_single(10, &mut slice_refs).unwrap_err());
+        assert_eq!(Error::InvalidInputIndex,
+                   r.encode_single(11, &mut slice_refs).unwrap_err());
+        assert_eq!(Error::InvalidInputIndex,
+                   r.encode_single(12, &mut slice_refs).unwrap_err());
+        assert_eq!(Error::InvalidInputIndex,
+                   r.encode_single(13, &mut slice_refs).unwrap_err());
+        assert_eq!(Error::InvalidInputIndex,
+                   r.encode_single(14, &mut slice_refs).unwrap_err());
     }
 }
