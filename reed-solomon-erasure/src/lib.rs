@@ -39,11 +39,15 @@ use inversion_tree::InversionTree;
 pub enum Error {
     TooFewShards,
     TooManyShards,
+    TooFewDataShards,
+    TooManyDataShards,
+    TooFewParityShards,
+    TooManyParityShards,
     IncorrectShardSize,
     TooFewShardsPresent,
     EmptyShard,
     InvalidShardsIndicator,
-    InvalidInputIndex,
+    InvalidIndex,
     InversionTreeError(inversion_tree::Error)
 }
 
@@ -264,7 +268,7 @@ fn mut_option_shards_to_mut_slices<'a>(shards : &'a mut [Option<Shard>])
 ///
 /// # Common error handling
 ///
-/// ### For `encode`, `encode_shards`, `verify`, `verify_shards`, `reconstruct`, `reconstruct_data`, `reconstruct_shards`, `reconstruct_data_shards`
+/// ## For `encode`, `encode_shards`, `verify`, `verify_shards`, `reconstruct`, `reconstruct_data`, `reconstruct_shards`, `reconstruct_data_shards`
 ///
 /// Return `Error::TooFewShards` or `Error::TooManyShards`
 /// when the number of provided shards
@@ -276,10 +280,56 @@ fn mut_option_shards_to_mut_slices<'a>(shards : &'a mut [Option<Shard>])
 /// Return `Error::IncorrectShardSize` when the provided shards
 /// are of different length.
 ///
-/// ### For `reconstruct`, `reconstruct_data`, `reconstruct_shards`, `reconstruct_data_shards`
+/// ## For `reconstruct`, `reconstruct_data`, `reconstruct_shards`, `reconstruct_data_shards`
 ///
 /// Return `Error::TooFewShardsPresent` when there are not
 /// enough shards for reconstruction.
+///
+/// # Variants of encoding methods
+///
+/// ## `sep`
+///
+/// Methods ending in `_sep` takes an immutable reference of data shard(s), and a mutable
+/// reference of parity shards.
+///
+/// They are useful as they do not need to borrow the data shard(s) mutably,
+/// and other work that only needs read-only access to data shards can be done
+/// in parallel/concurrently during the encoding.
+///
+/// Following is a table of all the `sep` variants
+///
+/// | not `sep` | `sep` |
+/// | --- | --- |
+/// | `encode_single_shard` | `encode_single_shard_sep` |
+/// | `encode_shards` | `encode_shards_sep` |
+/// | `encode_single` | `encode_single_sep` |
+/// | `encode`        | `encode_sep` |
+///
+/// The `sep` variants do similar checks on the provided data shards and parity shards.
+///
+/// Return `Error::TooFewDataShards`, `Error::TooManyDataShards`, `Error::TooFewParityShards`, or `Error::TooManyParityShards` when applicable.
+///
+/// ## `single`
+///
+/// Methods containing `single` facilitate shard by shard encoding, where
+/// the parity shards are partially constructed using one data shard at a time.
+/// See `ShardByShard` struct for more details on how shard by shard encoding
+/// can be useful.
+///
+/// They are prone to **misuse**, and it is recommended to use the `ShardByShard`
+/// bookkeeping struct instead for shard by shard encoding.
+///
+/// The ones that are also `sep` are **ESPECIALLY** prone to **misuse**.
+/// Only use them when you actually need the flexibility.
+///
+/// Following is a table of all the shard by shard variants
+///
+/// | all shards at once | shard by shard |
+/// | --- | --- |
+/// | `encode_shards` | `encode_single_shard` |
+/// | `encode_shards_sep` | `encode_single_shard_sep` |
+/// | `encode` | `encode_single` |
+/// | `encode_sep` | `encode_single_sep` |
 #[derive(Debug)]
 pub struct ReedSolomon {
     data_shard_count   : usize,
@@ -305,14 +355,14 @@ pub struct ParallelParam {
 /// Bookkeeper for shard by shard encoding.
 ///
 /// This is useful for avoiding incorrect use of
-/// `encode_single` and `encode_single_shard`.
+/// `encode_single`, `encode_single_sep`, `encode_single_shard`
+/// and `encode_single_shard_sep`.
 ///
 /// # Use cases
 ///
 /// Shard by shard encoding is useful for streamed data encoding
 /// when you do not have all the needed data shards immediately,
-///
-/// but you still want to spread out the encoding workload rather than
+/// but you want to spread out the encoding workload rather than
 /// doing the encoding after everything is ready.
 ///
 /// A concrete example would be network packets encoding,
@@ -373,8 +423,37 @@ impl ParallelParam {
     }
 }
 
+macro_rules! sbs_encode_checks {
+    (
+        nosep => $self:ident, $pieces:ident
+    ) => {{
+        if $self.parity_ready() {
+            return Err(SBSError::TooManyCalls);
+        }
+    }};
+    (
+        sep => $self:ident, $data:ident, $parity:ident
+    ) => {{
+        if $self.parity_ready() {
+            return Err(SBSError::TooManyCalls);
+        }
+        if $data.len() < $self.codec.data_shard_count() {
+            return Err(SBSError::RSError(Error::TooFewDataShards));
+        }
+        if $data.len() > $self.codec.data_shard_count() {
+            return Err(SBSError::RSError(Error::TooManyDataShards));
+        }
+        if $parity.len() < $self.codec.parity_shard_count() {
+            return Err(SBSError::RSError(Error::TooFewParityShards));
+        }
+        if $parity.len() > $self.codec.parity_shard_count() {
+            return Err(SBSError::RSError(Error::TooManyParityShards));
+        }
+    }}
+}
+
 impl<'a> ShardByShard<'a> {
-    /// Create a new instance of the bookkeeping struct.
+    /// Creates a new instance of the bookkeeping struct.
     pub fn new(codec : &'a ReedSolomon) -> ShardByShard<'a> {
         ShardByShard {
             codec,
@@ -382,12 +461,15 @@ impl<'a> ShardByShard<'a> {
         }
     }
 
-    /// Check if the parity shards are ready to use.
+    /// Checks if the parity shards are ready to use.
     pub fn parity_ready(&self) -> bool {
         self.cur_input == self.codec.data_shard_count
     }
 
     /// Resets the bookkeeping data.
+    ///
+    /// You should call this when you have added and encoded
+    /// all data shards, and have finished using the parity shards.
     ///
     /// Returns `LeftoverShards` when there are shards encoded
     /// but parity shards are not ready to use.
@@ -413,20 +495,10 @@ impl<'a> ShardByShard<'a> {
         self.cur_input
     }
 
-    /// Constructs the parity shards partially using the current input data shard.
-    ///
-    /// Returns `TooManyCalls` when all input data shards
-    /// have already been filled in via `encode` or `encode_shard`.
-    pub fn encode(&mut self, slices : &mut [&mut [u8]])
-                  -> Result<(), SBSError> {
-        if self.parity_ready() {
-            return Err(SBSError::TooManyCalls);
-        }
-
-        let result =
-            match self.codec.encode_single(self.cur_input,
-                                           slices)
-        {
+    fn return_and_incre_cur_input(&mut self,
+                                  res : Result<(), Error>)
+                                  -> Result<(), SBSError> {
+        let result = match res {
             Ok(()) => Ok(()),
             Err(x) => Err(SBSError::RSError(x))
         };
@@ -440,23 +512,64 @@ impl<'a> ShardByShard<'a> {
     ///
     /// Returns `TooManyCalls` when all input data shards
     /// have already been filled in via `encode` or `encode_shard`.
-    pub fn encode_shard(&mut self, shards : &mut [Shard])
+    pub fn encode(&mut self,
+                  slices : &mut [&mut [u8]])
+                  -> Result<(), SBSError> {
+        sbs_encode_checks!(nosep => self, slices);
+
+        let res = self.codec.encode_single(self.cur_input,
+                                           slices);
+
+        self.return_and_incre_cur_input(res)
+    }
+
+    /// Constructs the parity shards partially using the current input data shard.
+    ///
+    /// Returns `TooManyCalls` when all input data shards
+    /// have already been filled in via `encode` or `encode_shard`.
+    pub fn encode_sep(&mut self,
+                      data   : &[&[u8]],
+                      parity : &mut [&mut[u8]])
+                      -> Result<(), SBSError> {
+        sbs_encode_checks!(sep => self, data, parity);
+
+        let res = self.codec.encode_single_sep(self.cur_input,
+                                               &data[self.cur_input],
+                                               parity);
+
+        self.return_and_incre_cur_input(res)
+    }
+
+    /// Constructs the parity shards partially using the current input data shard.
+    ///
+    /// Returns `TooManyCalls` when all input data shards
+    /// have already been filled in via `encode` or `encode_shard`.
+    pub fn encode_shard(&mut self,
+                        shards : &mut [Shard])
                         -> Result<(), SBSError> {
-        if self.parity_ready() {
-            return Err(SBSError::TooManyCalls);
-        }
+        sbs_encode_checks!(nosep => self, slices);
 
-        let result =
-            match self.codec.encode_single_shard(self.cur_input,
-                                                 shards)
-        {
-            Ok(()) => Ok(()),
-            Err(x) => Err(SBSError::RSError(x))
-        };
+        let res = self.codec.encode_single_shard(self.cur_input,
+                                                 shards);
 
-        self.cur_input += 1;
+        self.return_and_incre_cur_input(res)
+    }
 
-        result
+    /// Constructs the parity shards partially using the current input data shard.
+    ///
+    /// Returns `TooManyCalls` when all input data shards
+    /// have already been filled in via `encode` or `encode_shard`.
+    pub fn encode_shard_sep(&mut self,
+                            data   : &[Shard],
+                            parity : &mut [Shard])
+                            -> Result<(), SBSError> {
+        sbs_encode_checks!(nosep => self, slices);
+
+        let res = self.codec.encode_single_shard_sep(self.cur_input,
+                                                     &data[self.cur_input],
+                                                     parity);
+
+        self.return_and_incre_cur_input(res)
     }
 }
 
@@ -480,13 +593,33 @@ impl PartialEq for ReedSolomon {
 
 macro_rules! check_piece_count {
     (
-        $self:ident, $pieces:ident
+        all => $self:ident, $pieces:ident
     ) => {{
         if $pieces.len() < $self.total_shard_count {
             return Err(Error::TooFewShards);
         }
         if $pieces.len() > $self.total_shard_count {
             return Err(Error::TooManyShards);
+        }
+    }};
+    (
+        data => $self:ident, $pieces:ident
+    ) => {{
+        if $pieces.len() < $self.data_shard_count {
+            return Err(Error::TooFewDataShards);
+        }
+        if $pieces.len() > $self.data_shard_count {
+            return Err(Error::TooManyDataShards);
+        }
+    }};
+    (
+        parity => $self:ident, $pieces:ident
+    ) => {{
+        if $pieces.len() < $self.parity_shard_count {
+            return Err(Error::TooFewParityShards);
+        }
+        if $pieces.len() > $self.parity_shard_count {
+            return Err(Error::TooManyParityShards);
         }
     }}
 }
@@ -503,6 +636,30 @@ macro_rules! check_slices {
             if slice.len() != size {
                 return Err(Error::IncorrectShardSize);
             }
+        }
+    }}
+}
+
+macro_rules! check_slice_index {
+    (
+        all => $self:ident, $index:ident
+    ) => {{
+        if $index >= $self.total_shard_count {
+            return Err(Error::InvalidIndex);
+        }
+    }};
+    (
+        data => $self:ident, $index:ident
+    ) => {{
+        if $index >= $self.data_shard_count {
+            return Err(Error::InvalidIndex);
+        }
+    }};
+    (
+        parity => $self:ident, $index:ident
+    ) => {{
+        if $index >= $self.parity_shard_count {
+            return Err(Error::InvalidIndex);
         }
     }}
 }
@@ -578,10 +735,10 @@ impl ReedSolomon {
                         matrix_rows  : &[&[u8]],
                         inputs       : &[&[u8]],
                         outputs      : &mut [&mut [u8]]) {
-        for c in 0..self.data_shard_count {
+        for i_input in 0..self.data_shard_count {
             self.code_single_slice(matrix_rows,
-                                   c,
-                                   inputs[c],
+                                   i_input,
+                                   inputs[i_input],
                                    outputs);
         }
     }
@@ -595,9 +752,11 @@ impl ReedSolomon {
             (outputs)
             .into_par_iter()
             .for_each(|(i_row, output)| {
+                let matrix_row_to_use = matrix_rows[i_row][i_input];
+
                 if i_input == 0 {
                     if output.len() <= self.pparam.bytes_per_encode {
-                        galois::mul_slice(matrix_rows[i_row][i_input],
+                        galois::mul_slice(matrix_row_to_use,
                                           input,
                                           output);
                     } else {
@@ -607,14 +766,14 @@ impl ReedSolomon {
                             .for_each(|(i, output)| {
                                 let start =
                                     i * self.pparam.bytes_per_encode;
-                                galois::mul_slice(matrix_rows[i_row][i_input],
+                                galois::mul_slice(matrix_row_to_use,
                                                   &input[start..start + output.len()],
                                                   output);
                             })
                     }
                 } else {
                     if output.len() <= self.pparam.bytes_per_encode {
-                        galois::mul_slice_xor(matrix_rows[i_row][i_input],
+                        galois::mul_slice_xor(matrix_row_to_use,
                                               input,
                                               output);
                     } else {
@@ -624,7 +783,7 @@ impl ReedSolomon {
                             .for_each(|(i, output)| {
                                 let start =
                                     i * self.pparam.bytes_per_encode;
-                                galois::mul_slice_xor(matrix_rows[i_row][i_input],
+                                galois::mul_slice_xor(matrix_row_to_use,
                                                       &input[start..start + output.len()],
                                                       output);
                             })
@@ -728,7 +887,7 @@ impl ReedSolomon {
     }
 
     /// Constructs the parity shards partially using only the data shard
-    /// indicated by index `i_input`.
+    /// indexed by `i_data`.
     ///
     /// The slots where the parity shards sit at will be overwritten.
     ///
@@ -741,13 +900,38 @@ impl ReedSolomon {
     ///
     /// It is recommended to use the `ShardByShard` bookkeeping struct instead of this function directly.
     pub fn encode_single_shard(&self,
-                               i_input : usize,
-                               shards  : &mut [Shard]) -> Result<(), Error> {
+                               i_data : usize,
+                               shards : &mut [Shard]) -> Result<(), Error> {
         let mut slices : SmallVec<[&mut [u8]; 32]> =
             convert_2D_slices!(shards =into=> SmallVec<[&mut [u8]; 32]>,
                                SmallVec::with_capacity);
 
-        self.encode_single(i_input, &mut slices)
+        self.encode_single(i_data, &mut slices)
+    }
+
+    /// Constructs the parity shards partially using only the data shard provided.
+    ///
+    /// The data shard must match the index `i_data`.
+    ///
+    /// The slots where the parity shards sit at will be overwritten.
+    ///
+    /// This is a wrapper of `encode_single_sep`.
+    ///
+    /// # Warning
+    ///
+    /// You must apply this function on the data shards in strict sequential order(0..data shard count),
+    /// otherwise the parity shards will be incorrect.
+    ///
+    /// It is recommended to use the `ShardByShard` bookkeeping struct instead of this function directly.
+    pub fn encode_single_shard_sep(&self,
+                                   i_data      : usize,
+                                   single_data : &Shard,
+                                   parity      : &mut[Shard]) -> Result<(), Error> {
+        let mut parity : SmallVec<[&mut [u8]; 32]> =
+            convert_2D_slices!(parity =into=> SmallVec<[&mut [u8]; 32]>,
+                               SmallVec::with_capacity);
+
+        self.encode_single_sep(i_data, single_data, &mut parity)
     }
 
     /// Constructs the parity shards.
@@ -764,8 +948,27 @@ impl ReedSolomon {
         self.encode(&mut slices)
     }
 
+    /// Constructs the parity shards.
+    ///
+    /// The slots where the parity shards sit at will be overwritten.
+    ///
+    /// This is a wrapper of `encode_sep`.
+    pub fn encode_shards_sep(&self,
+                             data   : &[Shard],
+                             parity : &mut [Shard]) -> Result<(), Error> {
+        let     data   : SmallVec<[&[u8]; 32]> =
+            convert_2D_slices!(data   =into=> SmallVec<[&[u8]; 32]>,
+                               SmallVec::with_capacity);
+
+        let mut parity : SmallVec<[&mut [u8]; 32]> =
+            convert_2D_slices!(parity =into=> SmallVec<[&mut [u8]; 32]>,
+                               SmallVec::with_capacity);
+
+        self.encode_sep(&data, &mut parity)
+    }
+
     /// Constructs the parity shards partially using only the data shard
-    /// indicated by index `i_input`.
+    /// indexed by `i_data`.
     ///
     /// The slots where the parity shards sit at will be overwritten.
     ///
@@ -776,29 +979,56 @@ impl ReedSolomon {
     ///
     /// It is recommended to use the `ShardByShard` bookkeeping struct instead of this function directly.
     pub fn encode_single(&self,
-                         i_input : usize,
+                         i_data  : usize,
                          slices  : &mut [&mut [u8]]) -> Result<(), Error> {
-        if i_input >= self.data_shard_count {
-            return Err(Error::InvalidInputIndex);
-        }
+        check_slice_index!(data => self, i_data);
 
-        check_piece_count!(self, slices);
+        check_piece_count!(all => self, slices);
 
         check_slices!(slices);
-
-        let parity_rows = self.get_parity_rows();
 
 	      // Get the slice of output buffers.
         let (mut_input, output) =
             slices.split_at_mut(self.data_shard_count);
 
-        let input = &mut_input[i_input];
+        let input = &mut_input[i_data];
+
+        self.encode_single_sep(i_data, input, output)
+    }
+
+    /// Constructs the parity shards partially using only the data shard provided.
+    ///
+    /// The data shard must match the index `i_data`.
+    ///
+    /// The slots where the parity shards sit at will be overwritten.
+    ///
+    /// # Warning
+    ///
+    /// You must apply this function on the data shards in strict sequential order(0..data shard count),
+    /// otherwise the parity shards will be incorrect.
+    ///
+    /// It is recommended to use the `ShardByShard` bookkeeping struct instead of this function directly.
+    pub fn encode_single_sep(&self,
+                             i_data      : usize,
+                             single_data : &[u8],
+                             parity      : &mut[&mut[u8]]) -> Result<(), Error> {
+        check_slice_index!(data => self, i_data);
+
+        check_piece_count!(parity => self, parity);
+
+        check_slices!(parity);
+
+        if single_data.len() != parity[0].len() {
+            return Err(Error::IncorrectShardSize);
+        }
+
+        let parity_rows = self.get_parity_rows();
 
 	      // Do the coding.
         self.code_single_slice(&parity_rows,
-                               i_input,
-                               input,
-                               output);
+                               i_data,
+                               single_data,
+                               parity);
 
         Ok(())
     }
@@ -809,11 +1039,9 @@ impl ReedSolomon {
     ///
     pub fn encode(&self,
                   slices : &mut [&mut [u8]]) -> Result<(), Error> {
-        check_piece_count!(self, slices);
+        check_piece_count!(all => self, slices);
 
         check_slices!(slices);
-
-        let parity_rows = self.get_parity_rows();
 
 	      // Get the slice of output buffers.
         let (mut_input, output) =
@@ -823,10 +1051,32 @@ impl ReedSolomon {
             convert_2D_slices!(mut_input =into=> SmallVec<[&[u8]; 32]>,
                                SmallVec::with_capacity);
 
+        self.encode_sep(&input, output)
+    }
+
+    /// Constructs the parity shards.
+    ///
+    /// The slots where the parity shards sit at will be overwritten.
+    ///
+    pub fn encode_sep(&self,
+                      data   : &[&[u8]],
+                      parity : &mut [&mut[u8]]) -> Result<(), Error> {
+        check_piece_count!(data   => self, data);
+        check_piece_count!(parity => self, parity);
+
+        check_slices!(data);
+        check_slices!(parity);
+
+        if data[0].len() != parity[0].len() {
+            return Err(Error::IncorrectShardSize);
+        }
+
+        let parity_rows = self.get_parity_rows();
+
 	      // Do the coding.
         self.code_some_slices(&parity_rows,
-                              &input,
-                              output);
+                              data,
+                              parity);
 
         Ok(())
     }
@@ -845,7 +1095,7 @@ impl ReedSolomon {
     /// Checks if the parity shards are correct.
     pub fn verify(&self,
                   slices : &[&[u8]]) -> Result<bool, Error> {
-        check_piece_count!(self, slices);
+        check_piece_count!(all => self, slices);
 
         check_slices!(slices);
 
@@ -913,7 +1163,7 @@ impl ReedSolomon {
                                    shards    : &mut [Option<Shard>],
                                    data_only : bool)
                                    -> Result<(), Error> {
-        check_piece_count!(self, shards);
+        check_piece_count!(all => self, shards);
 
         Self::check_option_shards(shards)?;
 
@@ -1011,7 +1261,7 @@ impl ReedSolomon {
                             slices        : &mut [&mut [u8]],
                             slice_present : &[bool],
                             data_only     : bool) -> Result<(), Error> {
-        check_piece_count!(self, slices);
+        check_piece_count!(all => self, slices);
 
         check_slices!(slices);
 

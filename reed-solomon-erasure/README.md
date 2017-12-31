@@ -16,10 +16,16 @@ Version `2.X.X` copies Klaus Post's implementation. The SIMD C code is copied fr
 See [Notes](#notes) and [License](#license) section for details.
 
 ## Usage
-Add the following to your `Cargo.toml`
+Add the following to your `Cargo.toml` for the normal version(tries to compile with SIMD operations when applicable)
 ```toml
 [dependencies]
-reed-solomon-erasure = "2.0"
+reed-solomon-erasure = "2.1"
+```
+or the following for the pure rust version
+```toml
+[dependencies.reed-solomon-erasure]
+version = "2.1"
+features = ["pure-rust"]
 ```
 and the following to your crate root
 ```rust
@@ -89,6 +95,15 @@ Below shows the result of one of the test configurations, other configurations s
 
 ## Contributions
 Contributions are welcome. Note that by submitting contributions, you agree that your work will be under the same license used by this project(MIT).
+
+## Credits
+Many thanks to the following people for testing and benchmarking on various platforms
+
+  - [lnicola](https://github.com/lnicola/) (platforms : (Linux, Intel))
+
+  - [hexjelly](https://github.com/hexjelly) (platforms : (Windows, AMD))
+
+Polished version of the results will be published later.
 
 ## Notes
 The `1.X.X` implementation mostly copies [BackBlaze's Java implementation](https://github.com/Backblaze/JavaReedSolomon).
