@@ -1,5 +1,6 @@
 # reed-solomon-erasure
 [![Build Status](https://travis-ci.org/darrenldl/reed-solomon-erasure.svg?branch=master)](https://travis-ci.org/darrenldl/reed-solomon-erasure)
+[![Build status](https://ci.appveyor.com/api/projects/status/47c0emjoa9bhpjlb/branch/master?svg=true)](https://ci.appveyor.com/project/darrenldl/reed-solomon-erasure/branch/master)
 [![codecov](https://codecov.io/gh/darrenldl/reed-solomon-erasure/branch/master/graph/badge.svg)](https://codecov.io/gh/darrenldl/reed-solomon-erasure)
 [![Coverage Status](https://coveralls.io/repos/github/darrenldl/reed-solomon-erasure/badge.svg?branch=master)](https://coveralls.io/github/darrenldl/reed-solomon-erasure?branch=master)
 [![Crates](https://img.shields.io/crates/v/reed-solomon-erasure.svg)](https://crates.io/crates/reed-solomon-erasure)
@@ -19,13 +20,12 @@ See [Notes](#notes) and [License](#license) section for details.
 Add the following to your `Cargo.toml` for the normal version(tries to compile with SIMD operations when applicable)
 ```toml
 [dependencies]
-reed-solomon-erasure = "2.1"
+reed-solomon-erasure = "2.3"
 ```
 or the following for the pure rust version
 ```toml
-[dependencies.reed-solomon-erasure]
-version = "2.1"
-features = ["pure-rust"]
+[dependencies]
+reed-solomon-erasure = { version = "2.3", features = ["pure-rust"] }
 ```
 and the following to your crate root
 ```rust
@@ -40,7 +40,7 @@ extern crate reed_solomon_erasure;
 use reed_solomon_erasure::*;
 
 fn main () {
-    let r = ReedSolomon::new(3, 2); // 3 data shards, 2 parity shards
+    let r = ReedSolomon::new(3, 2).unwrap(); // 3 data shards, 2 parity shards
 
     let mut master_copy = shards!([0, 1,  2,  3],
                                   [4, 5,  6,  7],
@@ -86,7 +86,7 @@ Machine : laptop with `Intel(R) Core(TM) i5-3337U CPU @ 1.80GHz (max 2.70GHz) 2 
 
 Below shows the result of one of the test configurations, other configurations show similar results in terms of ratio.
 
-|Configuration| Klaus Post's | 2.1.X | 2.0.X | 1.X.X |
+|Configuration| Klaus Post's | >= 2.1.0 | 2.0.X | 1.X.X |
 |---|---|---|---|---|
 | 10x2x1M | ~7800MB/s |~4800MB/s | ~1100MB/s | ~250MB/s |
 
@@ -106,6 +106,12 @@ Many thanks to the following people for testing and benchmarking on various plat
 Polished version of the results will be published later.
 
 ## Notes
+#### Code quality review
+If you'd like to evaluate the quality of this library, you may find audit comments helpful.
+
+Simply search for "AUDIT" to see the dev notes that are aimed at facilitating code reviews.
+
+#### Implementation notes
 The `1.X.X` implementation mostly copies [BackBlaze's Java implementation](https://github.com/Backblaze/JavaReedSolomon).
 
 The `2.X.X` implementation mostly copies [Klaus Post's Go implementation](https://github.com/klauspost/reedsolomon), and copies C files from [Nicolas Trangez's Haskell implementation](https://github.com/NicolasT/reedsolomon).
@@ -129,4 +135,4 @@ The C files for SIMD operations are copied(with none/minor modifications) from [
 The source code copied directly from Nicolas Trangez's project repo are under the MIT License as used by the project, the files are in `NicolasT_reedsolomon`
 
 #### TL;DR
-All files are released under MIT License
+All files are released under the MIT License
