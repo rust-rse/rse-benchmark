@@ -8,7 +8,6 @@
 //! and simply leave out the corrupted shards when attempting to reconstruct
 //! the missing data.
 
-//#![allow(dead_code)]
 mod misc_utils;
 mod galois;
 mod matrix;
@@ -339,7 +338,7 @@ pub struct ParallelParam {
     /// Number of bytes to split the slices into for computations
     /// which can be done in parallel.
     ///
-    /// Default is 8192.
+    /// Default is 32768.
     pub bytes_per_encode  : usize,
     //pub shards_per_encode : usize,
 }
@@ -411,7 +410,7 @@ impl ParallelParam {
     }
 
     pub fn with_default() -> ParallelParam {
-        Self::new(8192,
+        Self::new(32768,
                   /*4*/)
     }
 }
@@ -825,9 +824,9 @@ impl ReedSolomon {
                          i_input     : usize,
                          input       : &[u8],
                          outputs     : &mut [&mut [u8]]) {
-        misc_utils::breakdown_slice_mut_with_index
-            (outputs)
+        outputs
             .into_par_iter()
+            .enumerate()
             .for_each(|(i_row, output)| {
                 let matrix_row_to_use = matrix_rows[i_row][i_input];
 
@@ -837,9 +836,9 @@ impl ReedSolomon {
                                           input,
                                           output);
                     } else {
-                        misc_utils::split_slice_mut_with_index
-                            (output, self.pparam.bytes_per_encode)
+                        output.par_chunks_mut(self.pparam.bytes_per_encode)
                             .into_par_iter()
+                            .enumerate()
                             .for_each(|(i, output)| {
                                 let start =
                                     i * self.pparam.bytes_per_encode;
@@ -854,9 +853,9 @@ impl ReedSolomon {
                                               input,
                                               output);
                     } else {
-                        misc_utils::split_slice_mut_with_index
-                            (output, self.pparam.bytes_per_encode)
+                        output.par_chunks_mut(self.pparam.bytes_per_encode)
                             .into_par_iter()
+                            .enumerate()
                             .for_each(|(i, output)| {
                                 let start =
                                     i * self.pparam.bytes_per_encode;
@@ -878,13 +877,13 @@ impl ReedSolomon {
             make_blank_shards(inputs[0].len(), to_check.len());
         for c in 0..self.data_shard_count {
             let input = inputs[c];
-            misc_utils::breakdown_slice_mut_with_index
-                (&mut outputs)
-                .into_par_iter()
+            outputs
+                .par_iter_mut()
+                .enumerate()
                 .for_each(|(i_row, output)| {
-                    misc_utils::split_slice_mut_with_index
-                        (output, self.pparam.bytes_per_encode)
+                    output.par_chunks_mut(self.pparam.bytes_per_encode)
                         .into_par_iter()
+                        .enumerate()
                         .for_each(|(i, output)| {
                             let start =
                                 i * self.pparam.bytes_per_encode;
@@ -894,14 +893,15 @@ impl ReedSolomon {
                         })
                 })
         }
-        let any_shard_mismatch = misc_utils::breakdown_slice_with_index
-            (&outputs)
-            .into_par_iter()
+        let any_shard_mismatch =
+            outputs
+            .par_iter_mut()
+            .enumerate()
             .map(|(i, output)| {
                 let to_check = to_check[i];
-                misc_utils::split_slice_with_index
-                    (output, self.pparam.bytes_per_encode)
+                output.par_chunks(self.pparam.bytes_per_encode)
                     .into_par_iter()
+                    .enumerate()
                     .map(|(i, output)| {
                         let start =
                             i * self.pparam.bytes_per_encode;
