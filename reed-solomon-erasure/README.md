@@ -12,7 +12,7 @@ This is a port of [BackBlaze's Java implementation](https://github.com/Backblaze
 
 Version `1.X.X` copies BackBlaze's implementation, and is less performant as there were fewer places where parallelism could be added.
 
-Version `2.X.X` copies Klaus Post's implementation. The SIMD C code is copied from Nicolas Trangez's implementation with minor modifications.
+Version `>= 2.0.0` copies Klaus Post's implementation. The SIMD C code is copied from Nicolas Trangez's implementation with minor modifications.
 
 See [Notes](#notes) and [License](#license) section for details.
 
@@ -20,12 +20,12 @@ See [Notes](#notes) and [License](#license) section for details.
 Add the following to your `Cargo.toml` for the normal version(tries to compile with SIMD operations when applicable)
 ```toml
 [dependencies]
-reed-solomon-erasure = "2.3"
+reed-solomon-erasure = "3.0"
 ```
 or the following for the pure rust version
 ```toml
 [dependencies]
-reed-solomon-erasure = { version = "2.3", features = ["pure-rust"] }
+reed-solomon-erasure = { version = "3.0", features = ["pure-rust"] }
 ```
 and the following to your crate root
 ```rust
@@ -80,7 +80,7 @@ then do `cargo run --release` to start the benchmark.
 ## Performance
 Version `1.X.X`, `2.0.0` do not utilise SIMD.
 
-Version `2.1.0` onwards uses Nicolas's C files for SIMD operations.
+Version `2.1.0` onward uses Nicolas's C files for SIMD operations.
 
 Machine : laptop with `Intel(R) Core(TM) i5-3337U CPU @ 1.80GHz (max 2.70GHz) 2 Cores 4 Threads`
 
@@ -94,7 +94,7 @@ Below shows the result of one of the test configurations, other configurations s
 [Changelog](CHANGELOG.md)
 
 ## Contributions
-Contributions are welcome. Note that by submitting contributions, you agree that your work will be under the same license used by this project(MIT).
+Contributions are welcome. Note that by submitting contributions, you agree to license your work under the same license used by this project(MIT).
 
 ## Credits
 Many thanks to the following people for testing and benchmarking on various platforms
@@ -114,9 +114,9 @@ Simply search for "AUDIT" to see the dev notes that are aimed at facilitating co
 #### Implementation notes
 The `1.X.X` implementation mostly copies [BackBlaze's Java implementation](https://github.com/Backblaze/JavaReedSolomon).
 
-The `2.X.X` implementation mostly copies [Klaus Post's Go implementation](https://github.com/klauspost/reedsolomon), and copies C files from [Nicolas Trangez's Haskell implementation](https://github.com/NicolasT/reedsolomon).
+`2.0.0` onward mostly copies [Klaus Post's Go implementation](https://github.com/klauspost/reedsolomon), and copies C files from [Nicolas Trangez's Haskell implementation](https://github.com/NicolasT/reedsolomon).
 
-The test suite for both versions copies [Klaus Post's Go implementation](https://github.com/klauspost/reedsolomon).
+The test suite for all versions copies [Klaus Post's Go implementation](https://github.com/klauspost/reedsolomon) as basis.
 
 ## License
 #### BackBlaze's Java Reed-Solomon implementation
