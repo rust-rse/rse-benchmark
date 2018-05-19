@@ -1,12 +1,14 @@
 [package]
 name    = "reed-solomon-erasure"
-version = "3.0.0"
+version = "3.0.5"
 authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 build   = "build.rs"
 exclude = [
     "BackBlaze_JavaReedSolomon/*",
     "KlausPost_reedsolomon/*",
-    "NicolasT_reedsolomon/*"
+    "NicolasT_reedsolomon/*",
+    "appveyor.yml",
+    ".travis.yml"
 ]
 
 description   = "Rust implementation of Reed-Solomon erasure coding"
@@ -33,12 +35,13 @@ codecov   = { repository = "darrenldl/reed-solomon-erasure" }
 coveralls = { repository = "darrenldl/reed-solomon-erasure" }
 
 [dependencies]
-rayon    = "0.9"
+rayon    = "1.0"
 smallvec = "0.6"
 libc     = "0.2"
 
 [dev-dependencies]
-rand = "0.4"
+rand       = "0.4"
+quickcheck = "0.6"
 
 [build-dependencies]
 cc = "1.0"

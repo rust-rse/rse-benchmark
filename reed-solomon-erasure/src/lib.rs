@@ -8,15 +8,34 @@
 //! and simply leave out the corrupted shards when attempting to reconstruct
 //! the missing data.
 
+#[cfg(test)]
+#[macro_use]
+extern crate quickcheck;
+
+#[cfg(test)]
+extern crate rand;
+
+extern crate rayon;
+use rayon::prelude::*;
+use std::sync::Arc;
+
+extern crate smallvec;
+use smallvec::SmallVec;
+
+extern crate libc;
+
 #[macro_use]
 mod macros;
 
 mod misc_utils;
 mod galois;
+mod galois_tests;
 mod matrix;
+mod matrix_tests;
 mod inversion_tree;
+mod inversion_tree_tests;
 mod shard_utils;
-mod lib_test;
+mod lib_tests;
 
 pub use shard_utils::make_zero_len_shard;
 pub use shard_utils::make_zero_len_shards;
@@ -26,13 +45,6 @@ pub use shard_utils::shards_to_option_shards;
 pub use shard_utils::shards_into_option_shards;
 pub use shard_utils::option_shards_to_shards;
 pub use shard_utils::option_shards_into_shards;
-
-extern crate rayon;
-use rayon::prelude::*;
-use std::sync::Arc;
-
-extern crate smallvec;
-use smallvec::SmallVec;
 
 use matrix::Matrix;
 use inversion_tree::InversionTree;
@@ -213,6 +225,11 @@ fn mut_option_shards_to_mut_slices<'a>(shards : &'a mut [Option<Shard>])
 ///
 /// `verify_with_buffer`, `verify_shards_with_buffer` allow you to provide
 /// the buffer to avoid making heap allocation(s) for the buffer in every call.
+///
+/// The `with_buffer` variants also guarantee that the buffer contains the correct
+/// parity shards if the result is `Ok(_)` (i.e. it does not matter whether the
+/// verification passed or not, as long as the result is not an error, the buffer
+/// will contain the correct parity shards after the call).
 ///
 /// Following is a table of all the `with_buffer` variants
 ///

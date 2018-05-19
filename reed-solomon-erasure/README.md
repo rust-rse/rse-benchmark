@@ -5,6 +5,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/darrenldl/reed-solomon-erasure/badge.svg?branch=master)](https://coveralls.io/github/darrenldl/reed-solomon-erasure?branch=master)
 [![Crates](https://img.shields.io/crates/v/reed-solomon-erasure.svg)](https://crates.io/crates/reed-solomon-erasure)
 [![Documentation](https://docs.rs/reed-solomon-erasure/badge.svg)](https://docs.rs/reed-solomon-erasure)
+[![dependency status](https://deps.rs/repo/github/darrenldl/reed-solomon-erasure/status.svg)](https://deps.rs/repo/github/darrenldl/reed-solomon-erasure)
 
 Rust implementation of Reed-Solomon erasure coding
 
@@ -130,7 +131,7 @@ The tables and main functions of ```src/*``` are translated from [Klaus Post's G
 The source code copied directly from Klaus Post's project repo are under the MIT License as used by the project, the files are in `KlausPost_reedsolomon`
 
 #### Nicolas Trangez's Haskell Reed-Solomon implementation
-The C files for SIMD operations are copied(with none/minor modifications) from [Nicolas Trangez's Haskell implementation](https://github.com/NicolasT/reedsolomon), and are under the same MIT License as used by NicolasT's project
+The C files for SIMD operations are copied(with no/minor modifications) from [Nicolas Trangez's Haskell implementation](https://github.com/NicolasT/reedsolomon), and are under the same MIT License as used by NicolasT's project
 
 The source code copied directly from Nicolas Trangez's project repo are under the MIT License as used by the project, the files are in `NicolasT_reedsolomon`
 
