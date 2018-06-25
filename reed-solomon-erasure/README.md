@@ -21,12 +21,12 @@ See [Notes](#notes) and [License](#license) section for details.
 Add the following to your `Cargo.toml` for the normal version(tries to compile with SIMD operations when applicable)
 ```toml
 [dependencies]
-reed-solomon-erasure = "3.0"
+reed-solomon-erasure = "3.1"
 ```
 or the following for the pure rust version
 ```toml
 [dependencies]
-reed-solomon-erasure = { version = "3.0", features = ["pure-rust"] }
+reed-solomon-erasure = { version = "3.1", features = ["pure-rust"] }
 ```
 and the following to your crate root
 ```rust
@@ -53,7 +53,7 @@ fn main () {
     r.encode_shards(&mut master_copy).unwrap();
 
     // Make a copy and transform it into option shards arrangement
-    // for feeding into decode_missing
+    // for feeding into reconstruct_shards
     let mut shards = shards_into_option_shards(master_copy.clone());
 
     // We can remove up to 2 shards, which may be data or parity shards

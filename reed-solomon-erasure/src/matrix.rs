@@ -53,7 +53,7 @@ impl Matrix {
 
         Matrix { row_count : rows,
                  col_count : cols,
-                 data }
+                 data              }
     }
 
     pub fn new_with_data(init_data : Vec<Vec<u8>>) -> Matrix {
@@ -116,7 +116,7 @@ impl Matrix {
     }
 
     pub fn augment(&self, rhs : &Matrix) -> Matrix {
-        if self.row_count != self.col_count {
+        if self.row_count != rhs.row_count {
             panic!("Matrices do not have the same row count, lhs : {}, rhs : {}", self.row_count, rhs.row_count)
         }
         let mut result = Self::new(self.row_count,
@@ -160,8 +160,7 @@ impl Matrix {
 
         if r1 == r2 {
             return;
-        }
-        else {
+        } else {
             let mut tmp;
             for i in 0..self.col_count {
                 tmp = self.data[r1_s + i];

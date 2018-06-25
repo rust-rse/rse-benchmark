@@ -188,7 +188,7 @@ fn test_galois() {
     for i in 0..input.len() {
         assert_eq!(expect_xor[i], output1[i]);
     }
-    mul_slice_xor(52, &input, &mut output2);
+    mul_slice_xor_pure_rust(52, &input, &mut output2);
     for i in 0..input.len() {
         assert_eq!(expect_xor[i], output2[i]);
     }
@@ -241,22 +241,6 @@ fn test_slice_add() {
         slice_xor(&input, &mut output);
         for i in 0..expect.len() {
             assert_eq!(expect[i], output[i]);
-        }
-    }
-
-    for i in 0..256 {
-        let a = i as u8;
-        for j in 0..256 {
-            let b = j as u8;
-            for k in 0..256 {
-                let c = k as u8;
-                let x = add(a, add(b, c));
-                let y = add(add(a, b), c);
-                assert_eq!(x, y);
-                let x = mul(a, mul(b, c));
-                let y = mul(mul(a, b), c);
-                assert_eq!(x, y);
-            }
         }
     }
 }
