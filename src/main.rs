@@ -222,7 +222,7 @@ fn main() {
     benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(8192));
     benchmark_encode(500, 10, 4, 1_048_576, ParallelParam::new(8192));
     benchmark_encode(500, 50, 20, 1_048_576, ParallelParam::new(8192));
-    benchmark_encode(50, 17, 3, 16_000_000, ParallelParam::new(8192));
+    benchmark_encode(50, 17, 3, 16_777_216, ParallelParam::new(8192));
     println!("=====");*/
     benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(1024));
     benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(4096));
