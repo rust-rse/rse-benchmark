@@ -51,7 +51,7 @@ fn benchmark_encode(iterations    : usize,
     println!("    bytes per encode : {}", pparam.bytes_per_encode);
     println!("    time taken       : {}", time_taken);
     println!("    byte count       : {}", byte_count);
-    println!("    MB/s             : {}", byte_count / 1_000_000.0 / time_taken);
+    println!("    MB/s             : {}", byte_count / 1_048_576.0 / time_taken);
 }
 
 fn benchmark_encode_inplace(iterations    : usize,
@@ -61,7 +61,7 @@ fn benchmark_encode_inplace(iterations    : usize,
                             pparam        : ParallelParam) {
     const DATA_SHARDS   : usize = 5;
     const PARITY_SHARDS : usize = 2;
-    const PER_SHARD     : usize = 1_000_000;
+    const PER_SHARD     : usize = 1_048_576;
     //let mut shards = make_random_shards!(per_shard, data_shards + parity_shards);
     //let mut shards = make_blank_shards(per_shard, data_shards + parity_shards);
     let mut slices : [[u8; PER_SHARD]; DATA_SHARDS + PARITY_SHARDS] =
@@ -88,7 +88,7 @@ fn benchmark_encode_inplace(iterations    : usize,
     println!("    bytes per encode : {}", pparam.bytes_per_encode);
     println!("    time taken       : {}", time_taken);
     println!("    byte count       : {}", byte_count);
-    println!("    MB/s             : {}", byte_count / 1_000_000.0 / time_taken);
+    println!("    MB/s             : {}", byte_count / 1_048_576.0 / time_taken);
 }
 
 fn benchmark_verify(iterations    : usize,
@@ -115,7 +115,7 @@ fn benchmark_verify(iterations    : usize,
     println!("    bytes per encode : {}", pparam.bytes_per_encode);
     println!("    time taken       : {}", time_taken);
     println!("    byte count       : {}", byte_count);
-    println!("    MB/s             : {}", byte_count / 1_000_000.0 / time_taken);
+    println!("    MB/s             : {}", byte_count / 1_048_576.0 / time_taken);
 }
 
 fn benchmark_reconstruct(iterations    : usize,
@@ -145,18 +145,18 @@ fn benchmark_reconstruct(iterations    : usize,
     println!("    bytes per encode : {}", pparam.bytes_per_encode);
     println!("    time taken       : {}", time_taken);
     println!("    byte count       : {}", byte_count);
-    println!("    MB/s             : {}", byte_count / 1_000_000.0 / time_taken);
+    println!("    MB/s             : {}", byte_count / 1_048_576.0 / time_taken);
 }
 
 fn main() {
-    benchmark_encode(500, 5, 2, 1_000_000, ParallelParam::new(1024));
-    benchmark_encode(500, 5, 2, 1_000_000, ParallelParam::new(2048));
-    benchmark_encode(500, 5, 2, 1_000_000, ParallelParam::new(4096));
-    benchmark_encode(500, 5, 2, 1_000_000, ParallelParam::new(8192));
-    benchmark_encode(500, 5, 2, 1_000_000, ParallelParam::new(16384));
-    benchmark_encode(500, 5, 2, 1_000_000, ParallelParam::new(32768));
-    benchmark_encode(500, 5, 2, 1_000_000, ParallelParam::new(65536));
-    benchmark_encode(500, 5, 2, 1_000_000, ParallelParam::new(10485760));
+    /*benchmark_encode(500, 5, 2, 1_048_576, ParallelParam::new(1024));
+    benchmark_encode(500, 5, 2, 1_048_576, ParallelParam::new(2048));
+    benchmark_encode(500, 5, 2, 1_048_576, ParallelParam::new(4096));
+    benchmark_encode(500, 5, 2, 1_048_576, ParallelParam::new(8192));
+    benchmark_encode(500, 5, 2, 1_048_576, ParallelParam::new(16384));
+    benchmark_encode(500, 5, 2, 1_048_576, ParallelParam::new(32768));
+    benchmark_encode(500, 5, 2, 1_048_576, ParallelParam::new(65536));
+    benchmark_encode(500, 5, 2, 1_048_576, ParallelParam::new(10485760));*/
     /*println!("=====");
     benchmark_encode_inplace(500, ParallelParam::new(1024));
     benchmark_encode_inplace(500, ParallelParam::new(2048));
@@ -166,20 +166,20 @@ fn main() {
     benchmark_encode_inplace(500, ParallelParam::new(32768));
     benchmark_encode_inplace(500, ParallelParam::new(65536));
     benchmark_encode_inplace(500, ParallelParam::new(10485760));*/
+    /*println!("=====");
+    benchmark_encode(500, 10, 4, 1_048_576, ParallelParam::new(1024));
+    benchmark_encode(500, 10, 4, 1_048_576, ParallelParam::new(2048));
+    benchmark_encode(500, 10, 4, 1_048_576, ParallelParam::new(4096));
+    benchmark_encode(500, 10, 4, 1_048_576, ParallelParam::new(8192));
+    benchmark_encode(500, 10, 4, 1_048_576, ParallelParam::new(16384));
+    benchmark_encode(500, 10, 4, 1_048_576, ParallelParam::new(32768));
+    benchmark_encode(500, 10, 4, 1_048_576, ParallelParam::new(65536));
+    benchmark_encode(500, 10, 4, 1_048_576, ParallelParam::new(10485760));
     println!("=====");
-    benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(1024));
-    benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(2048));
-    benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(4096));
-    benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(8192));
-    benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(16384));
-    benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(32768));
-    benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(65536));
-    benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(10485760));
-    println!("=====");
-    benchmark_encode(500, 10, 1, 1_000_000, ParallelParam::new(8192));
-    benchmark_encode(500, 10, 2, 1_000_000, ParallelParam::new(8192));
-    benchmark_encode(500, 10, 3, 1_000_000, ParallelParam::new(8192));
-    benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(8192));
+    benchmark_encode(500, 10, 1, 1_048_576, ParallelParam::new(8192));
+    benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(8192));
+    benchmark_encode(500, 10, 3, 1_048_576, ParallelParam::new(8192));
+    benchmark_encode(500, 10, 4, 1_048_576, ParallelParam::new(8192));
     println!("=====");
     benchmark_encode(500, 3, 1, 496, ParallelParam::new(1024));
     benchmark_encode(500, 5, 1, 496, ParallelParam::new(1024));
@@ -216,18 +216,18 @@ fn main() {
     println!("=====");
     benchmark_encode(500, 10, 2, 10_000, ParallelParam::new(8192));
     benchmark_encode(500, 100, 20, 10_000, ParallelParam::new(8192));
-    benchmark_encode(500, 17, 3, 1_000_000, ParallelParam::new(8192));
+    benchmark_encode(500, 17, 3, 1_048_576, ParallelParam::new(8192));
     benchmark_encode(50, 10, 4, 16_000_000, ParallelParam::new(8192));
-    benchmark_encode(500, 5, 2, 1_000_000, ParallelParam::new(8192));
-    benchmark_encode(500, 10, 2, 1_000_000, ParallelParam::new(8192));
-    benchmark_encode(500, 10, 4, 1_000_000, ParallelParam::new(8192));
-    benchmark_encode(500, 50, 20, 1_000_000, ParallelParam::new(8192));
+    benchmark_encode(500, 5, 2, 1_048_576, ParallelParam::new(8192));
+    benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(8192));
+    benchmark_encode(500, 10, 4, 1_048_576, ParallelParam::new(8192));
+    benchmark_encode(500, 50, 20, 1_048_576, ParallelParam::new(8192));
     benchmark_encode(50, 17, 3, 16_000_000, ParallelParam::new(8192));
-    println!("=====");
-    benchmark_encode(500, 10, 2, 1_000_000, ParallelParam::new(1024));
-    benchmark_encode(500, 10, 2, 1_000_000, ParallelParam::new(4096));
-    benchmark_encode(500, 10, 2, 1_000_000, ParallelParam::new(8192));
-    benchmark_encode(500, 10, 2, 1_000_000, ParallelParam::new(16384));
-    benchmark_encode(500, 10, 2, 1_000_000, ParallelParam::new(32768));
-    benchmark_encode(500, 10, 2, 1_000_000, ParallelParam::new(65536));
+    println!("=====");*/
+    benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(1024));
+    benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(4096));
+    benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(8192));
+    benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(16384));
+    benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(32768));
+    benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(65536));
 }
