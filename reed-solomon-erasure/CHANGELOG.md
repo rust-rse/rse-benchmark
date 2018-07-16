@@ -1,7 +1,12 @@
 ## 3.1.1
-- Fixed internal function `matrix::augment`
-  - Not actually used in core code base
-  - Bug does not affect core code base
+- Fixed `Matrix::augment`
+  - The error checking code was incorrect
+  - Since this method is used in internal code only, and the only use case is a correct use case, the error did not lead to any bugs
+- Fixed benchmark data
+  - Previously used MB=10^6 bytes while I should have used MB=2^20 bytes
+  - Table in README has been updated accordingly
+    - The `>= 2.1.0` data is obtained by measuring again with the corrected `rse-benchmark` code
+    - The `2.0.X` and `1.X.X` data are simply adjusted by mutiplying `10^6` then dividing by `2^20`
 
 ## 3.1.0
 - Impl'd `std::error::Error` for `reed_solomon_erasure::Error` and `reed_solomon_erasure::SBSError`
