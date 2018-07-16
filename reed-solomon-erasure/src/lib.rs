@@ -15,8 +15,8 @@ extern crate quickcheck;
 #[cfg(test)]
 extern crate rand;
 
-extern crate rayon;
-use rayon::prelude::*;
+// extern crate rayon;
+// use rayon::prelude::*;
 use std::sync::Arc;
 
 extern crate smallvec;
@@ -712,45 +712,46 @@ impl ReedSolomon {
                          input       : &[u8],
                          outputs     : &mut [&mut [u8]]) {
         outputs
-            .into_par_iter()
+            // .into_par_iter()
+            .into_iter()
             .enumerate()
             .for_each(|(i_row, output)| {
                 let matrix_row_to_use = matrix_rows[i_row][i_input];
 
                 if i_input == 0 {
-                    if output.len() <= self.pparam.bytes_per_encode {
+                    // if output.len() <= self.pparam.bytes_per_encode {
                         galois::mul_slice(matrix_row_to_use,
                                           input,
                                           output);
-                    } else {
-                        output.par_chunks_mut(self.pparam.bytes_per_encode)
-                            .into_par_iter()
-                            .enumerate()
-                            .for_each(|(i, output)| {
-                                let start =
-                                    i * self.pparam.bytes_per_encode;
-                                galois::mul_slice(matrix_row_to_use,
-                                                  &input[start..start + output.len()],
-                                                  output);
-                            })
-                    }
+                    // } else {
+                    //     output.par_chunks_mut(self.pparam.bytes_per_encode)
+                    //         .into_par_iter()
+                    //         .enumerate()
+                    //         .for_each(|(i, output)| {
+                    //             let start =
+                    //                 i * self.pparam.bytes_per_encode;
+                    //             galois::mul_slice(matrix_row_to_use,
+                    //                               &input[start..start + output.len()],
+                    //                               output);
+                    //         })
+                    // }
                 } else {
-                    if output.len() <= self.pparam.bytes_per_encode {
+                    // if output.len() <= self.pparam.bytes_per_encode {
                         galois::mul_slice_xor(matrix_row_to_use,
                                               input,
                                               output);
-                    } else {
-                        output.par_chunks_mut(self.pparam.bytes_per_encode)
-                            .into_par_iter()
-                            .enumerate()
-                            .for_each(|(i, output)| {
-                                let start =
-                                    i * self.pparam.bytes_per_encode;
-                                galois::mul_slice_xor(matrix_row_to_use,
-                                                      &input[start..start + output.len()],
-                                                      output);
-                            })
-                    }
+                    // } else {
+                    //     output.par_chunks_mut(self.pparam.bytes_per_encode)
+                    //         .into_par_iter()
+                    //         .enumerate()
+                    //         .for_each(|(i, output)| {
+                    //             let start =
+                    //                 i * self.pparam.bytes_per_encode;
+                    //             galois::mul_slice_xor(matrix_row_to_use,
+                    //                                   &input[start..start + output.len()],
+                    //                                   output);
+                    //         })
+                    // }
                 }
             })
     }
@@ -774,7 +775,8 @@ impl ReedSolomon {
 
         let at_least_one_mismatch_present =
             buffer
-            .par_iter_mut()
+            .iter_mut()
+            // .par_iter_mut()
             .enumerate()
             .map(|(i, expected_parity_shard)| {
                 misc_utils::par_slices_are_equal(expected_parity_shard,
