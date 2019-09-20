@@ -9,9 +9,9 @@ use reed_solomon_erasure::*;
 
 macro_rules! make_random_shards {
     ($per_shard:expr, $size:expr) => {{
-        let mut shards = Vec::with_capacity(13);
+        let mut shards = Vec::<Vec<u8>>::with_capacity(13);
         for _ in 0..$size {
-            shards.push(make_blank_shard($per_shard));
+            shards.push(vec![0u8; $per_shard]);
         }
 
         for s in shards.iter_mut() {
@@ -22,7 +22,7 @@ macro_rules! make_random_shards {
     }}
 }
 
-fn fill_random(arr : &mut Shard) {
+fn fill_random(arr : &mut [u8]) {
     for a in arr.iter_mut() {
         *a = rand::random::<u8>();
     }
@@ -31,16 +31,15 @@ fn fill_random(arr : &mut Shard) {
 fn benchmark_encode(iterations    : usize,
                     data_shards   : usize,
                     parity_shards : usize,
-                    per_shard     : usize,
-                    pparam        : ParallelParam) {
+                    per_shard     : usize) {
     let mut shards = make_random_shards!(per_shard, data_shards + parity_shards);
     //let mut shards = make_blank_shards(per_shard, data_shards + parity_shards);
-    let r = ReedSolomon::with_pparam(data_shards, parity_shards, pparam).unwrap();
+    let r = ReedSolomon::<galois_8::Field>::new(data_shards, parity_shards).unwrap();
 
     let start = time::precise_time_ns();
     for _ in 0..iterations {
-        r.encode_shards(&mut shards).unwrap();
-        //assert!(r.verify_shards(&shards).unwrap());
+        r.encode(&mut shards).unwrap();
+        //assert!(r.verify(&shards).unwrap());
     }
     let end   = time::precise_time_ns();
     let time_taken = (end - start) as f64 / 1_000_000_000.0;
@@ -48,7 +47,7 @@ fn benchmark_encode(iterations    : usize,
     println!("encode :");
     println!("    shards           : {} / {}", data_shards, parity_shards);
     println!("    shard length     : {}", per_shard);
-    println!("    bytes per encode : {}", pparam.bytes_per_encode);
+    // println!("    bytes per encode : {}", pparam.bytes_per_encode);
     println!("    time taken       : {}", time_taken);
     println!("    byte count       : {}", byte_count);
     println!("    MB/s             : {}", byte_count / 1_048_576.0 / time_taken);
@@ -57,8 +56,8 @@ fn benchmark_encode(iterations    : usize,
 fn benchmark_encode_inplace(iterations    : usize,
                             //data_shards   : usize,
                             //parity_shards : usize,
-                            //per_shard     : usize,
-                            pparam        : ParallelParam) {
+                            //per_shard     : usize
+) {
     const DATA_SHARDS   : usize = 5;
     const PARITY_SHARDS : usize = 2;
     const PER_SHARD     : usize = 1_048_576;
@@ -66,7 +65,7 @@ fn benchmark_encode_inplace(iterations    : usize,
     //let mut shards = make_blank_shards(per_shard, data_shards + parity_shards);
     let mut slices : [[u8; PER_SHARD]; DATA_SHARDS + PARITY_SHARDS] =
         [[0; PER_SHARD]; DATA_SHARDS + PARITY_SHARDS];
-    let r = ReedSolomon::with_pparam(DATA_SHARDS, PARITY_SHARDS, pparam).unwrap();
+    let r = ReedSolomon::<galois_8::Field>::new(DATA_SHARDS, PARITY_SHARDS).unwrap();
 
     let mut slices_ref : Vec<&mut [u8]> =
         Vec::with_capacity(DATA_SHARDS + PARITY_SHARDS);
@@ -77,7 +76,7 @@ fn benchmark_encode_inplace(iterations    : usize,
     let start = time::precise_time_ns();
     for _ in 0..iterations {
         r.encode(&mut slices_ref).unwrap();
-        //assert!(r.verify_shards(&shards).unwrap());
+        //assert!(r.verify(&shards).unwrap());
     }
     let end   = time::precise_time_ns();
     let time_taken = (end - start) as f64 / 1_000_000_000.0;
@@ -85,7 +84,7 @@ fn benchmark_encode_inplace(iterations    : usize,
     println!("encode inplace :");
     println!("    shards           : {} / {}", DATA_SHARDS, PARITY_SHARDS);
     println!("    shard length     : {}", PER_SHARD);
-    println!("    bytes per encode : {}", pparam.bytes_per_encode);
+    // println!("    bytes per encode : {}", pparam.bytes_per_encode);
     println!("    time taken       : {}", time_taken);
     println!("    byte count       : {}", byte_count);
     println!("    MB/s             : {}", byte_count / 1_048_576.0 / time_taken);
@@ -94,17 +93,16 @@ fn benchmark_encode_inplace(iterations    : usize,
 fn benchmark_verify(iterations    : usize,
                     data_shards   : usize,
                     parity_shards : usize,
-                    per_shard     : usize,
-                    pparam        : ParallelParam) {
+                    per_shard     : usize) {
     let mut shards = make_random_shards!(per_shard, data_shards + parity_shards);
     //let mut shards = make_blank_shards(per_shard, data_shards + parity_shards);
-    let r = ReedSolomon::with_pparam(data_shards, parity_shards, pparam).unwrap();
+    let r = ReedSolomon::<galois_8::Field>::new(data_shards, parity_shards).unwrap();
 
-    r.encode_shards(&mut shards).unwrap();
+    r.encode(&mut shards).unwrap();
 
     let start = time::precise_time_ns();
     for _ in 0..iterations {
-        r.verify_shards(&shards).unwrap();
+        r.verify(&shards).unwrap();
     }
     let end   = time::precise_time_ns();
     let time_taken = (end - start) as f64 / 1_000_000_000.0;
@@ -112,7 +110,7 @@ fn benchmark_verify(iterations    : usize,
     println!("verify :");
     println!("    shards           : {} / {}", data_shards, parity_shards);
     println!("    shard length     : {}", per_shard);
-    println!("    bytes per encode : {}", pparam.bytes_per_encode);
+    // println!("    bytes per encode : {}", pparam.bytes_per_encode);
     println!("    time taken       : {}", time_taken);
     println!("    byte count       : {}", byte_count);
     println!("    MB/s             : {}", byte_count / 1_048_576.0 / time_taken);
@@ -121,20 +119,19 @@ fn benchmark_verify(iterations    : usize,
 fn benchmark_reconstruct(iterations    : usize,
                          data_shards   : usize,
                          parity_shards : usize,
-                         per_shard     : usize,
-                         pparam        : ParallelParam) {
+                         per_shard     : usize) {
     let mut shards = make_random_shards!(per_shard, data_shards + parity_shards);
     //let mut shards = make_blank_shards(per_shard, data_shards + parity_shards);
-    let r = ReedSolomon::with_pparam(data_shards, parity_shards, pparam).unwrap();
+    let r = ReedSolomon::<galois_8::Field>::new(data_shards, parity_shards).unwrap();
 
-    r.encode_shards(&mut shards).unwrap();
+    r.encode(&mut shards).unwrap();
 
-    let mut shards = shards_into_option_shards(shards);
+    let mut shards: Vec<Option<Vec<u8>>> = shards.into_iter().map(|s| Some(s)).collect();
 
     let start = time::precise_time_ns();
     for _ in 0..iterations {
         shards[0] = None;
-        r.reconstruct_shards(&mut shards).unwrap();
+        r.reconstruct(&mut shards).unwrap();
     }
     let end   = time::precise_time_ns();
     let time_taken = (end - start) as f64 / 1_000_000_000.0;
@@ -142,7 +139,7 @@ fn benchmark_reconstruct(iterations    : usize,
     println!("reconstruct :");
     println!("    shards           : {} / {}", data_shards, parity_shards);
     println!("    shard length     : {}", per_shard);
-    println!("    bytes per encode : {}", pparam.bytes_per_encode);
+    // println!("    bytes per encode : {}", pparam.bytes_per_encode);
     println!("    time taken       : {}", time_taken);
     println!("    byte count       : {}", byte_count);
     println!("    MB/s             : {}", byte_count / 1_048_576.0 / time_taken);
@@ -224,10 +221,12 @@ fn main() {
     benchmark_encode(500, 50, 20, 1_048_576, ParallelParam::new(8192));
     benchmark_encode(50, 17, 3, 16_777_216, ParallelParam::new(8192));
     println!("=====");*/
-    benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(1024));
-    benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(4096));
-    benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(8192));
-    benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(16384));
-    benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(32768));
-    benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(65536));
+    // benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(1024));
+    // benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(4096));
+    // benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(8192));
+    // benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(16384));
+    // benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(32768));
+    // benchmark_encode(500, 10, 2, 1_048_576, ParallelParam::new(65536));
+
+    benchmark_encode(500, 10, 2, 1_048_576);
 }

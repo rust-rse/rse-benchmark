@@ -1,3 +1,15 @@
+## 4.0.0
+- Major API restructure: removed `Shard` type in favor of generic functions
+- The logic of this crate is now generic over choice of finite field
+- The SIMD acceleration feature for GF(2^8) is now activated with the `simd-accel` Cargo feature. Pure-rust behavior is default.
+- Ran rustfmt
+- Adds a GF(2^16) implementation
+
+## 3.1.2 (not published)
+- Doc fix
+  - Added space before parantheses in code comments and documentation
+- Disabled SIMD C code for Android and iOS targets entirely
+
 ## 3.1.1
 - Fixed `Matrix::augment`
   - The error checking code was incorrect
@@ -7,6 +19,10 @@
   - Table in README has been updated accordingly
     - The `>= 2.1.0` data is obtained by measuring again with the corrected `rse-benchmark` code
     - The `2.0.X` and `1.X.X` data are simply adjusted by mutiplying `10^6` then dividing by `2^20`
+- Dependencies update
+  - Updated `rand` from `0.4` to `0.5.4`
+- Added special handling in `build.rs` for CC options on Android and iOS
+  - `-march=native` is not available for GCC on Android, see issue #23
 
 ## 3.1.0
 - Impl'd `std::error::Error` for `reed_solomon_erasure::Error` and `reed_solomon_erasure::SBSError`
@@ -15,7 +31,7 @@
   - No code changes due to this as no bugs were found
 - Upgraded InversionTree QuickCheck test
   - No code changes due to this as no bugs were found
-- Upgraded test suite for main codec methods(e.g. encode, reconstruct)
+- Upgraded test suite for main codec methods (e.g. encode, reconstruct)
   - A lot of heavy QuickCheck tests were added
   - No code changes due to this as no bugs were found
 - Upgraded test suite for ShardByShard methods
@@ -91,7 +107,7 @@
 
 ## 2.0.0
 - Complete rewrite of most code following Klaus Post's design
-- Added optimsations(parallelism, loop unrolling)
+- Added optimsations (parallelism, loop unrolling)
 - 4-5x faster than `1.X.X`
 
 ## 1.1.1
