@@ -5,7 +5,7 @@ extern crate time;
 //use self::rand::{thread_rng, Rng};
 //use std::rc::Rc;
 
-use reed_solomon_erasure::*;
+use reed_solomon_erasure::galois_8::ReedSolomon;
 
 macro_rules! make_random_shards {
     ($per_shard:expr, $size:expr) => {{
@@ -34,7 +34,7 @@ fn benchmark_encode(iterations    : usize,
                     per_shard     : usize) {
     let mut shards = make_random_shards!(per_shard, data_shards + parity_shards);
     //let mut shards = make_blank_shards(per_shard, data_shards + parity_shards);
-    let r = ReedSolomon::<galois_8::Field>::new(data_shards, parity_shards).unwrap();
+    let r = ReedSolomon::new(data_shards, parity_shards).unwrap();
 
     let start = time::precise_time_ns();
     for _ in 0..iterations {
@@ -65,7 +65,7 @@ fn benchmark_encode_inplace(iterations    : usize,
     //let mut shards = make_blank_shards(per_shard, data_shards + parity_shards);
     let mut slices : [[u8; PER_SHARD]; DATA_SHARDS + PARITY_SHARDS] =
         [[0; PER_SHARD]; DATA_SHARDS + PARITY_SHARDS];
-    let r = ReedSolomon::<galois_8::Field>::new(DATA_SHARDS, PARITY_SHARDS).unwrap();
+    let r = ReedSolomon::new(DATA_SHARDS, PARITY_SHARDS).unwrap();
 
     let mut slices_ref : Vec<&mut [u8]> =
         Vec::with_capacity(DATA_SHARDS + PARITY_SHARDS);
@@ -96,7 +96,7 @@ fn benchmark_verify(iterations    : usize,
                     per_shard     : usize) {
     let mut shards = make_random_shards!(per_shard, data_shards + parity_shards);
     //let mut shards = make_blank_shards(per_shard, data_shards + parity_shards);
-    let r = ReedSolomon::<galois_8::Field>::new(data_shards, parity_shards).unwrap();
+    let r = ReedSolomon::new(data_shards, parity_shards).unwrap();
 
     r.encode(&mut shards).unwrap();
 
@@ -122,7 +122,7 @@ fn benchmark_reconstruct(iterations    : usize,
                          per_shard     : usize) {
     let mut shards = make_random_shards!(per_shard, data_shards + parity_shards);
     //let mut shards = make_blank_shards(per_shard, data_shards + parity_shards);
-    let r = ReedSolomon::<galois_8::Field>::new(data_shards, parity_shards).unwrap();
+    let r = ReedSolomon::new(data_shards, parity_shards).unwrap();
 
     r.encode(&mut shards).unwrap();
 
