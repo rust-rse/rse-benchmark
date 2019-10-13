@@ -9,6 +9,8 @@
 
 Rust implementation of Reed-Solomon erasure coding
 
+WASM builds are also available, see section **WASM usage** below for details
+
 This is a port of [BackBlaze's Java implementation](https://github.com/Backblaze/JavaReedSolomon), [Klaus Post's Go implementation](https://github.com/klauspost/reedsolomon), and [Nicolas Trangez's Haskell implementation](https://github.com/NicolasT/reedsolomon).
 
 Version `1.X.X` copies BackBlaze's implementation, and is less performant as there were fewer places where parallelism could be added.
@@ -17,7 +19,11 @@ Version `>= 2.0.0` copies Klaus Post's implementation. The SIMD C code is copied
 
 See [Notes](#notes) and [License](#license) section for details.
 
-## Usage
+## WASM usage
+
+See [here](wasm/README.md) for details
+
+## Rust usage
 Add the following to your `Cargo.toml` for the normal version (pure Rust version)
 ```toml
 [dependencies]
@@ -38,17 +44,19 @@ extern crate reed_solomon_erasure;
 #[macro_use(shards)]
 extern crate reed_solomon_erasure;
 
-use reed_solomon_erasure::*;
+use reed_solomon_erasure::galois_8::ReedSolomon;
+// or use the following for Galois 2^16 backend
+// use reed_solomon_erasure::galois_16::ReedSolomon;
 
 fn main () {
     let r = ReedSolomon::new(3, 2).unwrap(); // 3 data shards, 2 parity shards
 
     let mut master_copy = shards!(
-      [0, 1,  2,  3],
-      [4, 5,  6,  7],
-      [8, 9, 10, 11],
-      [0, 0,  0,  0], // last 2 rows are parity hards
-      [0, 0,  0,  0]
+        [0, 1,  2,  3],
+        [4, 5,  6,  7],
+        [8, 9, 10, 11],
+        [0, 0,  0,  0], // last 2 rows are parity hards
+        [0, 0,  0,  0]
     );
 
     // Construct the parity shards
@@ -56,7 +64,7 @@ fn main () {
 
     // Make a copy and transform it into option shards arrangement
     // for feeding into reconstruct_shards
-    let mut shards: Vec<_> = master_copy.into_iter().map(Some).collect();
+    let mut shards: Vec<_> = master_copy.clone().into_iter().map(Some).collect();
 
     // We can remove up to 2 shards, which may be data or parity shards
     shards[0] = None;
@@ -74,10 +82,10 @@ fn main () {
 ```
 
 ## Benchmark it yourself
-You can test performance under different configurations quickly(e.g. data parity shards ratio, parallel parameters)
+You can test performance under different configurations quickly (e.g. data parity shards ratio, parallel parameters)
 by cloning this repo: https://github.com/darrenldl/rse-benchmark
 
-`rse-benchmark` contains a copy of this library(usually a fully functional dev version), so you only need to adjust `main.rs`
+`rse-benchmark` contains a copy of this library (usually a fully functional dev version), so you only need to adjust `main.rs`
 then do `cargo run --release` to start the benchmark.
 
 ## Performance
@@ -89,9 +97,11 @@ Machine: laptop with `Intel(R) Core(TM) i5-3337U CPU @ 1.80GHz (max 2.70GHz) 2 C
 
 Below shows the result of one of the test configurations, other configurations show similar results in terms of ratio.
 
-|Configuration| Klaus Post's | >= 2.1.0 | 2.0.X | 1.X.X |
+|Configuration| Klaus Post's | >= 2.1.0 && < 4.0.0 | 2.0.X | 1.X.X |
 |---|---|---|---|---|
 | 10x2x1M | ~7800MB/s |~4500MB/s | ~1000MB/s | ~240MB/s |
+
+Versions `>= 4.0.0` have not been benchmarked thoroughly yet
 
 ## Changelog
 [Changelog](CHANGELOG.md)
@@ -101,13 +111,18 @@ Contributions are welcome. Note that by submitting contributions, you agree to l
 
 ## Credits
 #### Library overhaul and Galois 2^16 backend
-Many thanks to the following people for overhaul of the library and introduction of Galois 16 backend
+Many thanks to the following people for overhaul of the library and introduction of Galois 2^16 backend
 
   - [drskalman](https://github.com/drskalman)
 
   - Jeff Burdges [burdges](https://github.com/burdges)
 
   - Robert Habermeier [rphmeier](https://github.com/rphmeier)
+
+#### WASM builds
+Many thanks to Nazar Mokrynskyi [nazar-pc](https://github.com/nazar-pc) for submitting his package for WASM builds
+
+He is the original author of the files stored in `wasm` folder. The files may have been modified by me later.
 
 #### Testers
 Many thanks to the following people for testing and benchmarking on various platforms
