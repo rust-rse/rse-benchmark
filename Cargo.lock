@@ -46,7 +46,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "reed-solomon-erasure"
-version = "4.0.0"
+version = "4.0.1"
 dependencies = [
  "cc 1.0.45 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.42 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -58,7 +58,7 @@ name = "rs-bench"
 version = "0.1.0"
 dependencies = [
  "rand 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "reed-solomon-erasure 4.0.0",
+ "reed-solomon-erasure 4.0.1",
  "time 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
