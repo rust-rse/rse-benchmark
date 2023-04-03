@@ -6,4 +6,4 @@ authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 [dependencies]
 reed-solomon-erasure = { path = "reed-solomon-erasure", features = [ "simd-accel" ] }
 rand = "0.4"
-time = "0.1"
+time = "0.2"
